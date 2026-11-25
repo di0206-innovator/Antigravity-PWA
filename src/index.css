@@ -1,0 +1,133 @@
+/* Hallmark v2.0.0 — AG Pocket OLED Dark & Light Token System | No literal colors beyond :root/theme blocks */
+@import "tailwindcss";
+
+:root,
+[data-theme="dark"] {
+  --bg-canvas: #000000;
+  --bg-surface: #05070d;
+  --bg-elevated: #0d1220;
+  --bg-code: #04060b;
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --accent-primary: #3b82f6;
+  --accent-primary-solid: #2563eb;
+  --accent-primary-hover: #1d4ed8;
+  --accent-primary-fg: #ffffff;
+  --accent-violet: #8b5cf6;
+  --accent-violet-soft: rgba(139, 92, 246, 0.14);
+  --accent-blue-soft: rgba(59, 130, 246, 0.14);
+  --status-ok: #34d399;
+  --status-ok-bg: rgba(52, 211, 153, 0.12);
+  --status-warn: #fbbf24;
+  --status-warn-bg: rgba(251, 191, 36, 0.12);
+  --status-danger: #f87171;
+  --status-danger-bg: rgba(248, 113, 113, 0.12);
+  --focus-ring: #60a5fa;
+  --backdrop: rgba(0, 0, 0, 0.78);
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="light"] {
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-code: #0f172a;
+  --border-subtle: #cbd5e1;
+  --border-strong: #64748b;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --accent-primary: #2563eb;
+  --accent-primary-solid: #1d4ed8;
+  --accent-primary-hover: #1e40af;
+  --accent-primary-fg: #ffffff;
+  --accent-violet: #7c3aed;
+  --accent-violet-soft: rgba(124, 58, 237, 0.1);
+  --accent-blue-soft: rgba(37, 99, 235, 0.1);
+  --status-ok: #047857;
+  --status-ok-bg: rgba(4, 120, 87, 0.1);
+  --status-warn: #b45309;
+  --status-warn-bg: rgba(180, 83, 9, 0.1);
+  --status-danger: #b91c1c;
+  --status-danger-bg: rgba(185, 28, 28, 0.1);
+  --focus-ring: #2563eb;
+  --backdrop: rgba(15, 23, 42, 0.55);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  max-width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-x {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

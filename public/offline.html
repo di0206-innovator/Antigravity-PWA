@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Offline — AG Pocket</title>
+    <style>
+      :root {
+        --bg-canvas: #000000;
+        --bg-surface: #05070d;
+        --border-subtle: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --accent-primary-solid: #2563eb;
+        --accent-primary-fg: #ffffff;
+        --focus-ring: #60a5fa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100dvh;
+        background-color: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        overflow-x: clip;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(1.25rem, env(safe-area-inset-top, 0px))
+          max(1.25rem, env(safe-area-inset-right, 0px))
+          max(1.25rem, env(safe-area-inset-bottom, 0px))
+          max(1.25rem, env(safe-area-inset-left, 0px));
+      }
+
+      main {
+        width: 100%;
+        max-width: 28rem;
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 1rem;
+        padding: 1.5rem;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .brand-name {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+      }
+
+      p {
+        margin: 0 0 0.875rem;
+        font-size: 0.9375rem;
+        line-height: 1.55;
+        color: var(--text-secondary);
+      }
+
+      .note {
+        padding: 0.875rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-subtle);
+        background-color: var(--bg-canvas);
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 1.25rem;
+      }
+
+      a.cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        background-color: var(--accent-primary-solid);
+        color: var(--accent-primary-fg);
+        text-decoration: none;
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+
+      a.cta:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="60" height="60" rx="14" fill="#05070d" stroke="#1e293b" stroke-width="2" />
+          <path d="M12 46L22 18L32 46" stroke="#3b82f6" stroke-width="4.25" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M16 37H28" stroke="#3b82f6" stroke-width="4.25" stroke-linecap="round" />
+          <path d="M51 23.5C49 20 45.5 18 41.5 18C35.2 18 31 23.2 31 32C31 40.8 35.2 46 41.8 46C47.5 46 51.5 42.2 51.5 35.5V32.5H42.5" stroke="#8b5cf6" stroke-width="4.25" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <p class="brand-name">AG Pocket</p>
+      </div>
+      <h1>You are offline</h1>
+      <p>
+        This page could not be loaded because your device currently has no network connection.
+      </p>
+      <div class="note">
+        Once cached, local AG Pocket modules (Projects, Prompt Studio, Skill Deck, Workflow Library,
+        Task Board, Activity Log, and Settings) work offline. Antigravity Remote Control
+        (https://antigravity.google.com) requires an active internet connection.
+      </div>
+      <a class="cta" href="/">Return to AG Pocket</a>
+    </main>
+  </body>
+</html>
