@@ -197,11 +197,15 @@ function sanitizeDraft(raw: PromptDraft): PromptDraft {
       sanitizePlainText(v, 10000),
     ])
   );
+  const tags = Array.isArray(raw.tags)
+    ? raw.tags.map((t) => sanitizePlainText(t, 48).trim()).filter(Boolean).slice(0, 30)
+    : undefined;
 
   return {
     ...raw,
     title: sanitizePlainText(raw.title, 160),
     body: sanitizePlainText(raw.body, 50000),
+    ...(tags !== undefined ? { tags } : {}),
     variableValues,
   };
 }

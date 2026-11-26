@@ -1,14 +1,19 @@
 /* Hallmark Design Tokens */
 :root {
   /* Palette */
-  --color-primary: #1e3a8a; /* Indigo 800 */
+  --color-primary: #1e3a8a;
+  /* Indigo 800 */
   --color-primary-foreground: #ffffff;
-  --color-secondary: #64748b; /* Slate 500 */
+  --color-secondary: #64748b;
+  /* Slate 500 */
   --color-secondary-foreground: #ffffff;
-  --color-background: #f9fafb; /* Gray 50 */
+  --color-background: #f9fafb;
+  /* Gray 50 */
   --color-surface: #ffffff;
-  --color-muted: #6b7280; /* Gray 500 */
-  --color-accent: #10b981; /* Emerald 500 */
+  --color-muted: #6b7280;
+  /* Gray 500 */
+  --color-accent: #10b981;
+  /* Emerald 500 */
   --color-accent-foreground: #ffffff;
 
   /* Typography */
@@ -28,7 +33,10 @@
 
 /* Hallmark fallback – prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;

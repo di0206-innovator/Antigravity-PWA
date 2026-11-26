@@ -133,14 +133,14 @@ export function AppShell({ children }: AppShellProps) {
       </a>
 
       <header className="safe-top sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/95 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-3 py-2.5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-1.5 min-[360px]:gap-2 px-2.5 py-2.5 min-[360px]:px-3 sm:px-6">
           <Link
             to="/"
-            className="touch-target inline-flex items-center gap-2.5 rounded-xl px-1.5 py-1 min-w-0"
+            className="touch-target inline-flex items-center gap-1.5 min-[360px]:gap-2.5 rounded-xl px-1 min-[360px]:px-1.5 py-1 min-w-0"
           >
             <AgMonogram size={32} />
             <div className="min-w-0">
-              <span className="block truncate text-base font-semibold tracking-tight text-[var(--text-primary)]">
+              <span className="block truncate text-[15px] min-[360px]:text-base font-semibold tracking-tight text-[var(--text-primary)]">
                 AG Pocket
               </span>
               <span className="hidden sm:block truncate text-xs text-[var(--text-muted)]">
@@ -149,8 +149,11 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </Link>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge tone={isOnline ? 'success' : 'warning'}>
+          <div className="flex items-center gap-1.5 min-[360px]:gap-2 shrink-0">
+            <Badge
+              tone={isOnline ? 'success' : 'warning'}
+              className="px-2 min-[360px]:px-2.5 gap-1 min-[360px]:gap-1.5"
+            >
               {isOnline ? (
                 <Wifi className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               ) : (
@@ -163,7 +166,7 @@ export function AppShell({ children }: AppShellProps) {
               to="/settings"
               end
               aria-label="Open Settings"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors"
+              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors"
             >
               <Settings className="h-5 w-5" aria-hidden="true" />
             </NavLink>
@@ -174,7 +177,7 @@ export function AppShell({ children }: AppShellProps) {
               aria-label="Open navigation menu"
               aria-expanded={navDrawerOpen}
               aria-controls="ag-nav-drawer"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
+              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
             >
               <Menu className="h-5 w-5" aria-hidden="true" />
             </button>

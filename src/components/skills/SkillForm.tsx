@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SKILL_CATEGORIES, type SkillCategory, type SkillEntry } from '../../types/domain';
 import { skillsRepo } from '../../db/repo';
 import { useAppStore } from '../../stores/useAppStore';
@@ -18,6 +18,14 @@ export function SkillForm({ skill, onDone }: { skill?: SkillEntry; onDone: () =>
   const [tags, setTags] = useState(skill?.tags.join(', ') ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -36,11 +44,12 @@ export function SkillForm({ skill, onDone }: { skill?: SkillEntry; onDone: () =>
       if (skill) await skillsRepo.update(skill.id, input);
       else await skillsRepo.create(input);
       addToast(skill ? 'Skill updated.' : 'Skill created.', 'success');
+      if (mountedRef.current) setSaving(false);
       onDone();
     } catch (err) {
-      setErrors(errorIssues(err));
-    } finally {
+      if (!mountedRef.current) return;
       setSaving(false);
+      setErrors(errorIssues(err));
     }
   }
 
@@ -61,13 +70,13 @@ export function SkillForm({ skill, onDone }: { skill?: SkillEntry; onDone: () =>
           <option key={c} value={c}>{c}</option>
         ))}
       </Select>
-      <Textarea label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <Textarea label="Usage instructions" className="min-h-[140px]" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
-      <Textarea label="Sample prompt" value={samplePrompt} onChange={(e) => setSamplePrompt(e.target.value)} />
-      <Input label="Tags" hint="Comma-separated" value={tags} onChange={(e) => setTags(e.target.value)} />
+      <Textarea label="Description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={4000} />
+      <Textarea label="Usage instructions" className="min-h-[140px]" value={instructions} onChange={(e) => setInstructions(e.target.value)} maxLength={30000} />
+      <Textarea label="Sample prompt" value={samplePrompt} onChange={(e) => setSamplePrompt(e.target.value)} maxLength={10000} />
+      <Input label="Tags" hint="Comma-separated" value={tags} onChange={(e) => setTags(e.target.value)} maxLength={500} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={saving}>{skill ? 'Save changes' : 'Create skill'}</Button>
-        <Button variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button variant="ghost" disabled={saving} onClick={onDone}>Cancel</Button>
       </div>
     </form>
   );

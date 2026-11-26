@@ -42,11 +42,15 @@ describe('useHaptics', () => {
       value: vibrateMock,
     });
 
-    useAppStore.setState({ hapticsEnabled: false, reducedMotion: false });
+    act(() => {
+      useAppStore.setState({ hapticsEnabled: false, reducedMotion: false });
+    });
     const { result } = renderHook(() => useHaptics());
     expect(result.current.triggerHaptic('light')).toBe(false);
 
-    useAppStore.setState({ hapticsEnabled: true, reducedMotion: true });
+    act(() => {
+      useAppStore.setState({ hapticsEnabled: true, reducedMotion: true });
+    });
     expect(result.current.triggerHaptic('medium')).toBe(false);
     expect(vibrateMock).not.toHaveBeenCalled();
   });

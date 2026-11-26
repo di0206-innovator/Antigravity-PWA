@@ -363,7 +363,7 @@ export function SetupCenterPage() {
                     )}
                   </Button>
                 </div>
-                <pre className="overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-code)] px-3.5 py-2.5 text-xs sm:text-sm text-[var(--text-primary)]">
+                <pre className="overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-code)] px-3.5 py-2.5 text-xs sm:text-sm text-[var(--text-code)]">
                   <code>{item.command}</code>
                 </pre>
                 <p className="text-xs leading-relaxed text-[var(--text-muted)]">{item.notes}</p>

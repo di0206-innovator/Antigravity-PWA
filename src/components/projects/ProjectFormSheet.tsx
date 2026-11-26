@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ValidationError, projectsRepo } from "../../db/repo";
-import { validateOfficialAntigravityUrl } from "../../services/security";
+import { sanitizePlainText, validateOfficialAntigravityUrl } from "../../services/security";
 import { useAppStore } from "../../stores/useAppStore";
 import {
   PROJECT_CATEGORIES,
@@ -42,6 +42,20 @@ const EMPTY: FormState = {
   pinned: false,
 };
 
+function initialFormState(project?: Project | null): FormState {
+  if (!project) return EMPTY;
+  return {
+    title: project.title,
+    category: project.category,
+    machineName: project.machineName,
+    workspaceLabel: project.workspaceLabel,
+    officialUrl: project.officialUrl,
+    description: project.description,
+    notes: project.notes,
+    pinned: project.pinned,
+  };
+}
+
 export function ProjectFormSheet({ open, project, onClose, onSaved }: Props) {
   return (
     <Sheet
@@ -50,18 +64,31 @@ export function ProjectFormSheet({ open, project, onClose, onSaved }: Props) {
       title={project ? "Edit project" : "New project"}
       description="Stored locally on this device. Not synced with Antigravity."
     >
-      <ProjectForm project={project} onClose={onClose} onSaved={onSaved} />
+      <ProjectForm
+        key={project?.id ?? "new"}
+        project={project}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
     </Sheet>
   );
 }
 
 function ProjectForm({ project, onClose, onSaved }: Omit<Props, "open">) {
   const addToast = useAppStore((s) => s.addToast);
-  const [form, setForm] = useState<FormState>(project ? { ...project } : EMPTY);
+  const [form, setForm] = useState<FormState>(() => initialFormState(project));
   const [touchedUrl, setTouchedUrl] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -73,14 +100,15 @@ function ProjectForm({ project, onClose, onSaved }: Omit<Props, "open">) {
     (touchedUrl || submitted || form.officialUrl.length > 0) && !urlCheck.valid
       ? urlCheck.error
       : undefined;
+  const cleanTitle = sanitizePlainText(form.title).trim();
   const titleError =
-    submitted && !form.title.trim() ? "Project title is required." : undefined;
+    submitted && !cleanTitle ? "Project title is required." : undefined;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitted(true);
     setErrors([]);
-    if (!form.title.trim() || !urlCheck.valid) return;
+    if (!cleanTitle || !urlCheck.valid) return;
     setSaving(true);
     try {
       const input = { ...form, officialUrl: urlCheck.normalizedUrl ?? "" };
@@ -88,16 +116,17 @@ function ProjectForm({ project, onClose, onSaved }: Omit<Props, "open">) {
         ? await projectsRepo.update(project.id, input)
         : await projectsRepo.create(input);
       addToast(project ? "Project updated." : "Project created.", "success");
+      if (mountedRef.current) setSaving(false);
       onSaved?.(saved);
       onClose();
     } catch (err) {
+      if (!mountedRef.current) return;
+      setSaving(false);
       if (err instanceof ValidationError) setErrors(err.issues);
       else
         setErrors([
           err instanceof Error ? err.message : "Could not save project.",
         ]);
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -139,6 +168,7 @@ function ProjectForm({ project, onClose, onSaved }: Omit<Props, "open">) {
         type="url"
         inputMode="url"
         autoComplete="off"
+        maxLength={2048}
         placeholder="https://antigravity.google.com/..."
         hint="Optional. Must be an https://antigravity.google.com address."
         value={form.officialUrl}

@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -45,7 +45,16 @@ export function SettingsPage() {
     usePwaInstall();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const revokeTimersRef = useRef<Set<number>>(new Set());
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const timers = revokeTimersRef.current;
+    return () => {
+      timers.forEach((timerId) => window.clearTimeout(timerId));
+      timers.clear();
+    };
+  }, []);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -99,7 +108,11 @@ export function SettingsPage() {
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      const revokeTimerId = window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+        revokeTimersRef.current.delete(revokeTimerId);
+      }, 1000);
+      revokeTimersRef.current.add(revokeTimerId);
 
       triggerHaptic('success');
       addToast('Local backup exported as JSON.', 'success');

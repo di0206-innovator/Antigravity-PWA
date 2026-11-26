@@ -60,7 +60,7 @@ export function TaskCard({
       ) : null}
       <div className="flex flex-wrap gap-1.5">
         {project ? <Badge tone="violet">{project.title}</Badge> : null}
-        {task.dueDate ? (
+        {task.dueDate && task.status !== "Completed" ? (
           <Badge tone={overdue ? "danger" : "neutral"}>
             {overdue ? "Overdue · " : "Due "}
             {task.dueDate}

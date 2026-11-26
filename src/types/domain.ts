@@ -96,6 +96,7 @@ export interface PromptDraft {
   id: 'active';
   title: string;
   body: string;
+  tags?: string[];
   variableValues: Record<string, string>;
   selectedTemplateId?: string;
   selectedProjectId?: string;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Sparkles, Star } from 'lucide-react';
 import { db } from '../db/database';
 import { skillsRepo } from '../db/repo';
+import { useHaptics } from '../hooks/useHaptics';
 import { useLive } from '../hooks/useLive';
 import { useAppStore } from '../stores/useAppStore';
 import { SKILL_CATEGORIES, type SkillEntry } from '../types/domain';
@@ -24,7 +25,8 @@ export function SkillDeckPage() {
   const navigate = useNavigate();
   const addToast = useAppStore((s) => s.addToast);
   const queuePromptInjection = useAppStore((s) => s.queuePromptInjection);
-  const { data: skills, loading } = useLive(() => db.skills.toArray(), []);
+  const { triggerHaptic } = useHaptics();
+  const { data: skills, loading, error } = useLive(() => db.skills.toArray(), []);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [favOnly, setFavOnly] = useState(false);
@@ -58,6 +60,10 @@ export function SkillDeckPage() {
     setEditing(s);
     setSheetOpen(true);
   };
+  const closeSheet = () => {
+    setSheetOpen(false);
+    setEditing(undefined);
+  };
   const total = skills?.length ?? 0;
 
   return (
@@ -69,7 +75,7 @@ export function SkillDeckPage() {
             Local reference catalogue of skill instructions and prompt snippets.
           </p>
         </div>
-        <Button onClick={() => openSheet()}>
+        <Button onClick={() => openSheet()} className="shrink-0">
           <Plus className="h-4 w-4" aria-hidden="true" /> New skill
         </Button>
       </header>
@@ -98,7 +104,11 @@ export function SkillDeckPage() {
         <Star className="h-4 w-4" aria-hidden="true" /> Favourites only
       </Button>
 
-      {loading ? (
+      {error ? (
+        <p role="alert" className="text-sm text-[var(--status-danger)]">
+          Could not load skills.
+        </p>
+      ) : loading ? (
         <p className="text-sm text-[var(--text-secondary)]">Loading skills...</p>
       ) : total === 0 ? (
         <EmptyState
@@ -111,6 +121,18 @@ export function SkillDeckPage() {
         <EmptyState
           title="No matching skills"
           description="Try a different search, category, or turn off the favourites filter."
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setCategory('all');
+                setFavOnly(false);
+              }}
+            >
+              Clear filters
+            </Button>
+          }
         />
       ) : (
         <ul className="space-y-3" aria-label="Skills">
@@ -118,7 +140,10 @@ export function SkillDeckPage() {
             <li key={s.id} className="min-w-0">
               <SkillCard
                 skill={s}
-                onToggleFavorite={(x) => guarded(() => skillsRepo.setFavorite(x.id, !x.isFavorite))}
+                onToggleFavorite={(x) => {
+                  triggerHaptic('light');
+                  void guarded(() => skillsRepo.setFavorite(x.id, !x.isFavorite));
+                }}
                 onEdit={openSheet}
                 onDelete={(x) =>
                   guarded(async () => {
@@ -126,7 +151,10 @@ export function SkillDeckPage() {
                     addToast('Skill deleted.', 'success');
                   })
                 }
-                onCopy={(x) => void copyWithFeedback(composeBody(x), `skill "${x.name}"`)}
+                onCopy={async (x) => {
+                  const ok = await copyWithFeedback(composeBody(x), `skill "${x.name}"`, 'skill');
+                  if (ok) triggerHaptic('success');
+                }}
                 onUse={(x) => {
                   queuePromptInjection({
                     source: 'skill',
@@ -145,10 +173,11 @@ export function SkillDeckPage() {
 
       <Sheet
         open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={closeSheet}
         title={editing ? 'Edit skill' : 'New skill'}
+        description="Saved locally on this device. AG Pocket never syncs skills with desktop Antigravity."
       >
-        <SkillForm skill={editing} onDone={() => setSheetOpen(false)} />
+        <SkillForm key={editing?.id ?? 'new'} skill={editing} onDone={closeSheet} />
       </Sheet>
     </div>
   );

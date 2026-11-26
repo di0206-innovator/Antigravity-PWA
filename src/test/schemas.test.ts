@@ -5,6 +5,7 @@ import {
   ExportBundleV1Schema,
   ProjectInputSchema,
   ProjectSchema,
+  PromptDraftSchema,
   PromptTemplateInputSchema,
   PromptTemplateSchema,
   SkillEntrySchema,
@@ -296,7 +297,49 @@ describe('Zod schemas validation', () => {
     const cleanedProject = ProjectInputSchema.parse({
       title: '  \u0001Clean\u0002 Title  ',
       category: 'Other',
+      machineName: ' \u0000Mac ',
+      workspaceLabel: ' \u0007ws ',
+      officialUrl: 'https://antigravity.google.com/',
+      description: 'Desc\u0001line',
+      notes: 'Note\u0002line',
     });
     expect(cleanedProject.title).toBe('Clean Title');
+    expect(cleanedProject.machineName).toBe('Mac');
+    expect(cleanedProject.workspaceLabel).toBe('ws');
+    expect(cleanedProject.officialUrl).toBe('https://antigravity.google.com');
+    expect(cleanedProject.description).toBe('Descline');
+    expect(cleanedProject.notes).toBe('Noteline');
+
+    const cleanedSkill = SkillInputSchema.parse({
+      name: 'Clean Skill',
+      category: 'Security',
+      instructions: 'Do review',
+      description: 'Safe\u0000desc',
+      samplePrompt: 'Sample\u0007prompt',
+    });
+    expect(cleanedSkill.description).toBe('Safedesc');
+    expect(cleanedSkill.samplePrompt).toBe('Sampleprompt');
+
+    // v1 PromptDraft compatibility with and without optional tags
+    expect(
+      PromptDraftSchema.parse({
+        id: 'active',
+        title: 'Draft\u0001',
+        body: 'Body\u0002',
+        variableValues: { key: 'val\u0003' },
+        updatedAt: now,
+      })
+    ).toMatchObject({ title: 'Draft', body: 'Body', variableValues: { key: 'val' } });
+
+    expect(
+      PromptDraftSchema.parse({
+        id: 'active',
+        title: 'Tagged',
+        body: 'Body',
+        tags: ['\u0001tag1'],
+        variableValues: {},
+        updatedAt: now,
+      }).tags
+    ).toEqual(['tag1']);
   });
 });

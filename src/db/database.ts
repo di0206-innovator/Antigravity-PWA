@@ -85,6 +85,7 @@ export function createEmptyPromptDraft(nowIso: string = new Date().toISOString()
     id: 'active',
     title: '',
     body: '',
+    tags: [],
     variableValues: {},
     updatedAt: nowIso,
   };

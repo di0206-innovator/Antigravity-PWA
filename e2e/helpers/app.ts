@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, type Request } from '@playwright/test';
 
 export const OFFICIAL_URLS = {
   base: 'https://antigravity.google.com',
@@ -345,7 +345,26 @@ export async function getOpenedUrls(page: Page): Promise<OpenedUrlRecord[]> {
 
 function matchesExpectedUrl(actual: string, expected: string | RegExp): boolean {
   if (typeof expected === 'string') {
-    return actual === expected || actual.startsWith(expected);
+    try {
+      const parsedActual = new URL(actual);
+      const parsedExpected = new URL(expected);
+      if (parsedActual.origin !== parsedExpected.origin) {
+        return false;
+      }
+      if (parsedExpected.pathname !== '/') {
+        if (parsedExpected.pathname.endsWith('/')) {
+          return parsedActual.pathname.startsWith(parsedExpected.pathname);
+        }
+        return (
+          parsedActual.pathname === parsedExpected.pathname &&
+          parsedActual.search === parsedExpected.search &&
+          parsedActual.hash === parsedExpected.hash
+        );
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
   return expected.test(actual);
 }
@@ -442,6 +461,7 @@ export interface ErrorCollector {
   pageErrors: string[];
   consoleErrors: string[];
   assertNoErrors: () => void;
+  assertNoPageErrors: () => void;
 }
 
 export function attachErrorListeners(page: Page): ErrorCollector {
@@ -464,6 +484,9 @@ export function attachErrorListeners(page: Page): ErrorCollector {
     assertNoErrors: () => {
       expect(pageErrors, `Unexpected page errors: ${pageErrors.join(' | ')}`).toEqual([]);
       expect(consoleErrors, `Unexpected console errors: ${consoleErrors.join(' | ')}`).toEqual([]);
+    },
+    assertNoPageErrors: () => {
+      expect(pageErrors, `Unexpected page errors: ${pageErrors.join(' | ')}`).toEqual([]);
     },
   };
 }
@@ -496,14 +519,22 @@ export function attachSecurityNetworkGuard(page: Page): SecurityNetworkGuard {
   const violations: string[] = [];
   const websockets: string[] = [];
   const allRequests: string[] = [];
+  const seenRequests = new WeakSet<Request>();
 
-  page.on('request', (request) => {
+  const recordRequest = (request: Request) => {
+    if (seenRequests.has(request)) {
+      return;
+    }
+    seenRequests.add(request);
     const url = request.url();
     allRequests.push(url);
     if (!isAllowedLocalOrDataUrl(url)) {
       violations.push(url);
     }
-  });
+  };
+
+  page.on('request', recordRequest);
+  page.context().on('request', recordRequest);
 
   page.on('websocket', (ws) => {
     websockets.push(ws.url());
@@ -579,7 +610,10 @@ const PRIMARY_NAV_HEADINGS: Record<PrimaryNavLabel, RegExp> = {
 
 export async function navigatePrimaryTab(page: Page, label: PrimaryNavLabel): Promise<void> {
   const nameRegex = new RegExp(`^${label}$`, 'i');
-  const navScope = page.locator('nav');
+  const navScope = page
+    .getByRole('navigation', { name: /primary navigation/i })
+    .or(page.locator('nav').first())
+    .first();
   const target = navScope
     .getByRole('link', { name: nameRegex })
     .or(navScope.getByRole('button', { name: nameRegex }))
@@ -659,6 +693,7 @@ export async function navigateDrawerRoute(
   const item = findVisibleItem();
   await expect(item).toBeVisible();
   await item.click();
+  await expect(page.getByRole('dialog', { name: /navigation menu/i })).toBeHidden();
 }
 
 export async function expectHeading(page: Page, pattern: string | RegExp): Promise<void> {
@@ -699,24 +734,23 @@ export async function getThemeSnapshot(page: Page): Promise<ThemeSnapshot> {
   });
 }
 
+type SetInputFilePayload = Extract<Parameters<Locator['setInputFiles']>[0], { buffer: unknown }>;
+
 export async function setJsonInputFile(
   inputLocator: Locator,
   filename: string,
   content: string,
 ): Promise<void> {
-  await inputLocator.evaluate(
-    (element, payload) => {
-      const input = element as HTMLInputElement;
-      const dt = new DataTransfer();
-      const file = new File([payload.content], payload.filename, {
-        type: 'application/json',
-      });
-      dt.items.add(file);
-      input.files = dt.files;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    },
-    { filename, content },
-  );
+  const nodeBuffer = (
+    globalThis as unknown as {
+      Buffer: { from(data: string, encoding: string): SetInputFilePayload['buffer'] };
+    }
+  ).Buffer;
+  await inputLocator.setInputFiles({
+    name: filename,
+    mimeType: 'application/json',
+    buffer: nodeBuffer.from(content, 'utf-8'),
+  });
 }
 
 export async function installExportSpy(page: Page): Promise<void> {
@@ -743,4 +777,265 @@ export async function getLatestExportedText(page: Page): Promise<string> {
     }
     return blobs[blobs.length - 1].blob.text();
   });
+}
+
+export async function ensureServiceWorkerReady(page: Page): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(async () => {
+          if (!('serviceWorker' in navigator)) return false;
+          const reg = await navigator.serviceWorker.ready;
+          return Boolean(reg.active && reg.active.state === 'activated');
+        }),
+      { timeout: 15_000, message: 'Expected service worker to activate' },
+    )
+    .toBe(true);
+
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(async () => {
+          if (!('caches' in window)) return 0;
+          const keys = await window.caches.keys();
+          return keys.length;
+        }),
+      { timeout: 15_000, message: 'Expected service worker precache to populate' },
+    )
+    .toBeGreaterThan(0);
+
+  const hasController = await page.evaluate(() => Boolean(navigator.serviceWorker.controller));
+  if (!hasController) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('main')).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), {
+        timeout: 15_000,
+      })
+      .toBe(true);
+  }
+}
+
+export interface CreateProjectInput {
+  title: string;
+  category?: (typeof PROJECT_CATEGORIES)[number];
+  machineName?: string;
+  workspaceLabel?: string;
+  officialUrl?: string;
+  description?: string;
+  notes?: string;
+  pinned?: boolean;
+}
+
+export async function createProjectViaUi(page: Page, fields: CreateProjectInput): Promise<void> {
+  if (new URL(page.url()).pathname !== ROUTES.projects) {
+    await navigatePrimaryTab(page, 'Projects');
+  }
+  const newBtn = page
+    .getByRole('button', { name: /^new project$/i })
+    .or(page.getByRole('button', { name: /^create your first project$/i }))
+    .first();
+  await expect(newBtn).toBeVisible();
+  await newBtn.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByLabel(/^title$/i).fill(fields.title);
+  if (fields.category) {
+    await dialog.getByLabel(/^category$/i).selectOption(fields.category);
+  }
+  if (fields.machineName !== undefined) {
+    await dialog.getByLabel(/^machine name$/i).fill(fields.machineName);
+  }
+  if (fields.workspaceLabel !== undefined) {
+    await dialog.getByLabel(/^workspace label$/i).fill(fields.workspaceLabel);
+  }
+  if (fields.officialUrl !== undefined) {
+    await dialog.getByLabel(/official antigravity session url/i).fill(fields.officialUrl);
+  }
+  if (fields.description !== undefined) {
+    await dialog.getByLabel(/^description$/i).fill(fields.description);
+  }
+  if (fields.notes !== undefined) {
+    await dialog.getByLabel(/^notes$/i).fill(fields.notes);
+  }
+  if (fields.pinned !== undefined) {
+    const checkbox = dialog.getByLabel(/pin this project/i);
+    if (fields.pinned) {
+      await checkbox.check();
+    } else {
+      await checkbox.uncheck();
+    }
+  }
+
+  await dialog.getByRole('button', { name: /^(create project|save changes)$/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  project?: string;
+  status?: (typeof TASK_STATUSES)[number];
+  priority?: (typeof TASK_PRIORITIES)[number];
+  dueDate?: string;
+  notes?: string;
+}
+
+export async function createTaskViaUi(page: Page, fields: CreateTaskInput): Promise<void> {
+  if (new URL(page.url()).pathname !== ROUTES.tasks) {
+    await navigateDrawerRoute(page, /task board/i);
+    await expectHeading(page, /task board/i);
+  }
+  await page.getByRole('button', { name: /^new task$/i }).first().click();
+  const dialog = page.getByRole('dialog', { name: /new task/i });
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByLabel(/^title$/i).fill(fields.title);
+  if (fields.description !== undefined) {
+    await dialog.getByLabel(/^description$/i).fill(fields.description);
+  }
+  if (fields.project !== undefined) {
+    await dialog.getByLabel(/^project$/i).selectOption({ label: fields.project });
+  }
+  if (fields.status !== undefined) {
+    await dialog.getByLabel(/^status$/i).selectOption(fields.status);
+  }
+  if (fields.priority !== undefined) {
+    await dialog.getByLabel(/^priority$/i).selectOption(fields.priority);
+  }
+  if (fields.dueDate !== undefined) {
+    await dialog.getByLabel(/^due date$/i).fill(fields.dueDate);
+  }
+  if (fields.notes !== undefined) {
+    await dialog.getByLabel(/^notes$/i).fill(fields.notes);
+  }
+
+  await dialog.getByRole('button', { name: /^(create task|save changes)$/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
+export interface CreateSkillInput {
+  name: string;
+  category?: (typeof SKILL_CATEGORIES)[number];
+  description?: string;
+  instructions: string;
+  samplePrompt?: string;
+  tags?: string;
+}
+
+export async function createSkillViaUi(page: Page, fields: CreateSkillInput): Promise<void> {
+  if (new URL(page.url()).pathname !== ROUTES.skills) {
+    await navigatePrimaryTab(page, 'Skills');
+  }
+  await page.getByRole('button', { name: /^new skill$/i }).first().click();
+  const dialog = page.getByRole('dialog', { name: /new skill/i });
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByLabel(/^name$/i).fill(fields.name);
+  if (fields.category) {
+    await dialog.getByLabel(/^category$/i).selectOption(fields.category);
+  }
+  if (fields.description !== undefined) {
+    await dialog.getByLabel(/^description$/i).fill(fields.description);
+  }
+  await dialog.getByLabel(/usage instructions/i).fill(fields.instructions);
+  if (fields.samplePrompt !== undefined) {
+    await dialog.getByLabel(/sample prompt/i).fill(fields.samplePrompt);
+  }
+  if (fields.tags !== undefined) {
+    await dialog.getByLabel(/^tags$/i).fill(fields.tags);
+  }
+
+  await dialog.getByRole('button', { name: /^(create skill|save changes)$/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
+export interface CreateWorkflowInput {
+  title: string;
+  category?: (typeof WORKFLOW_CATEGORIES)[number];
+  description?: string;
+  steps: string[];
+  relatedSkills?: string;
+  copyablePrompt?: string;
+  tags?: string;
+}
+
+export async function createWorkflowViaUi(page: Page, fields: CreateWorkflowInput): Promise<void> {
+  if (new URL(page.url()).pathname !== ROUTES.workflows) {
+    await navigateDrawerRoute(page, /workflow library/i);
+    await expectHeading(page, /workflow library/i);
+  }
+  await page.getByRole('button', { name: /^new workflow$/i }).first().click();
+  const dialog = page.getByRole('dialog', { name: /new workflow/i });
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByLabel(/^title$/i).fill(fields.title);
+  if (fields.category) {
+    await dialog.getByLabel(/^category$/i).selectOption(fields.category);
+  }
+  if (fields.description !== undefined) {
+    await dialog.getByLabel(/^description$/i).fill(fields.description);
+  }
+  for (let i = 0; i < fields.steps.length; i++) {
+    if (i > 0) {
+      await dialog.getByRole('button', { name: /^add step$/i }).click();
+    }
+    await dialog.getByLabel(new RegExp(`^step ${i + 1}$`, 'i')).fill(fields.steps[i]);
+  }
+  if (fields.relatedSkills !== undefined) {
+    await dialog.getByLabel(/related skills/i).fill(fields.relatedSkills);
+  }
+  if (fields.copyablePrompt !== undefined) {
+    await dialog.getByLabel(/copyable prompt/i).fill(fields.copyablePrompt);
+  }
+  if (fields.tags !== undefined) {
+    await dialog.getByLabel(/^tags$/i).fill(fields.tags);
+  }
+
+  await dialog.getByRole('button', { name: /^(create workflow|save changes)$/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
+export async function assertTouchTargetSize(locator: Locator, minPx = 44): Promise<void> {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box, 'Expected visible element to have a bounding box').not.toBeNull();
+  if (box) {
+    expect(box.width, `Touch target width ${box.width}px < ${minPx}px`).toBeGreaterThanOrEqual(minPx);
+    expect(box.height, `Touch target height ${box.height}px < ${minPx}px`).toBeGreaterThanOrEqual(minPx);
+  }
+}
+
+export async function verifyFocusTrappedInDialog(
+  page: Page,
+  dialogLocator: Locator,
+): Promise<void> {
+  await expect(dialogLocator).toBeVisible();
+  await expect
+    .poll(
+      async () => dialogLocator.evaluate((el) => el.contains(document.activeElement)),
+      { message: 'Expected initial focus to move inside open dialog' },
+    )
+    .toBe(true);
+
+  const focusableCount = await dialogLocator
+    .locator(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    .count();
+
+  const tabIterations = Math.max(focusableCount + 3, 6);
+  for (let i = 0; i < tabIterations; i++) {
+    await page.keyboard.press('Tab');
+    const inside = await dialogLocator.evaluate((el) => el.contains(document.activeElement));
+    expect(inside, `Focus escaped dialog on forward Tab #${i + 1}`).toBe(true);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('Shift+Tab');
+    const inside = await dialogLocator.evaluate((el) => el.contains(document.activeElement));
+    expect(inside, `Focus escaped dialog on Shift+Tab #${i + 1}`).toBe(true);
+  }
 }

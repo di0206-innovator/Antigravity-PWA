@@ -1,5 +1,6 @@
 import { logActivity } from '../../db/activityService';
 import { useAppStore } from '../../stores/useAppStore';
+import type { ActivityCategory } from '../../types/domain';
 
 async function writeClipboard(text: string): Promise<boolean> {
   try {
@@ -26,14 +27,18 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Copies text, toasts the result, and logs a prompt-category activity on success. */
-export async function copyWithFeedback(text: string, label: string): Promise<boolean> {
+/** Copies text, toasts the result, and logs an activity entry on success. */
+export async function copyWithFeedback(
+  text: string,
+  label: string,
+  category: ActivityCategory = 'prompt'
+): Promise<boolean> {
   const { addToast } = useAppStore.getState();
   const ok = await writeClipboard(text);
   if (ok) {
     addToast(`Copied ${label} to clipboard.`, 'success');
     try {
-      await logActivity({ category: 'prompt', description: `Copied ${label} to clipboard` });
+      await logActivity({ category, description: `Copied ${label} to clipboard` });
     } catch {
       /* logging is best effort */
     }

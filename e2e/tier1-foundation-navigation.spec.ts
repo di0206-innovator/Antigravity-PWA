@@ -34,6 +34,11 @@ test.beforeEach(async ({ page }) => {
   await resetAppState(page);
 });
 
+test.afterEach(() => {
+  networkGuard.assertClean();
+  errors.assertNoErrors();
+});
+
 test.describe('F1 — Core Runtime & Libraries', () => {
   test('F1.1: app boots at / with non-empty #root, visible main landmark, and zero runtime errors', async ({
     page,
@@ -161,8 +166,10 @@ test.describe('F2 — Vercel Static Deployment Config & Deep-Link SPA Routing', 
     await page.goto(ROUTES.projectDetail('nonexistent-project-id'), {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.locator('main')).toBeVisible();
-    await expect(page.locator('body')).toContainText(/not found|no project|back to projects|home/i);
+    const main = page.locator('main');
+    await expect(main).toBeVisible();
+    await expect(main).toContainText(/project not found/i);
+    await expect(main.getByRole('link', { name: /back to projects/i })).toBeVisible();
     errors.assertNoErrors();
   });
 
@@ -233,13 +240,13 @@ test.describe('F3 — Official-First Companion Boundary', () => {
   test('F3.4: official-first companion boundary is visibly disclosed on Home, Setup, and Privacy', async ({
     page,
   }) => {
-    await expect(page.locator('main')).toContainText(/antigravity\.google\.com|official/i);
+    await expect(page.locator('main')).toContainText(/antigravity\.google\.com/i);
 
     await page.goto(ROUTES.setup, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('main')).toContainText(/official|antigravity\.google/i);
+    await expect(page.locator('main')).toContainText(/antigravity\.google/i);
 
     await page.goto(ROUTES.privacy, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('main')).toContainText(/official|antigravity\.google/i);
+    await expect(page.locator('main')).toContainText(/antigravity\.google/i);
     errors.assertNoErrors();
   });
 
@@ -308,6 +315,7 @@ test.describe('F4 — Disabled Future Integration Adapter', () => {
   }) => {
     await navigatePrimaryTab(page, 'Prompts');
     await expectHeading(page, /prompt/i);
+    await expect(page.locator('main')).toContainText(/nothing is sent anywhere/i);
     await expect(page.getByRole('button', { name: /copy/i }).first()).toBeVisible();
     await expect(
       page.getByRole('button', { name: /submit directly to agent|auto-submit/i }),
@@ -447,7 +455,7 @@ test.describe('F6 — Official URL Validation & Safe Content Handling', () => {
     const imgPayload = '<img src=x onerror="window.__xssTriggered=true">';
     await navigatePrimaryTab(page, 'Prompts');
 
-    const editor = page.locator('textarea').first();
+    const editor = page.getByLabel('Prompt', { exact: true });
     await expect(editor).toBeVisible();
     await editor.fill(`Inspect ${imgPayload}`);
 
@@ -467,10 +475,24 @@ test.describe('F6 — Official URL Validation & Safe Content Handling', () => {
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Multiline Safe Project');
     await page.getByRole('dialog').getByLabel(/^notes$/i).fill(multilineNote);
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await expect(page.locator('main')).toContainText('Multiline Safe Project');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.locator('main')).toContainText('Multiline Safe Project');
+
+    await page.getByRole('link', { name: 'Multiline Safe Project' }).click();
+    await expect(page).toHaveURL(/\/projects\/.+/);
+    await expectHeading(page, 'Multiline Safe Project');
+
+    await expect(page.locator('main')).toContainText('Line 1 "quoted"');
+    await expect(page.locator('main')).toContainText('Line 2');
+    await expect(page.locator('main')).toContainText('indented');
+    const mainTextContent = await page.locator('main').textContent();
+    expect(mainTextContent ?? '').toContain(multilineNote);
+    await expect(page.locator('main img, main script')).toHaveCount(0);
+    const triggered = await page.evaluate(() => Boolean(window.__xssTriggered));
+    expect(triggered).toBe(false);
     errors.assertNoErrors();
   });
 });
@@ -502,8 +524,8 @@ test.describe('F7 — OLED Dark Default + Light Theme & AG Monogram', () => {
 
     await navigatePrimaryTab(page, 'Settings');
     const lightOption = page
-      .getByRole('button', { name: /light/i })
-      .or(page.getByRole('radio', { name: /light/i }))
+      .getByRole('button', { name: /^light$/i })
+      .or(page.getByRole('radio', { name: /^light$/i }))
       .first();
     await expect(lightOption).toBeVisible();
     await lightOption.click();
@@ -519,8 +541,8 @@ test.describe('F7 — OLED Dark Default + Light Theme & AG Monogram', () => {
   }) => {
     await navigatePrimaryTab(page, 'Settings');
     const lightOption = page
-      .getByRole('button', { name: /light/i })
-      .or(page.getByRole('radio', { name: /light/i }))
+      .getByRole('button', { name: /^light$/i })
+      .or(page.getByRole('radio', { name: /^light$/i }))
       .first();
     await lightOption.click();
 
@@ -547,8 +569,8 @@ test.describe('F7 — OLED Dark Default + Light Theme & AG Monogram', () => {
 
     await navigatePrimaryTab(page, 'Settings');
     await page
-      .getByRole('button', { name: /light/i })
-      .or(page.getByRole('radio', { name: /light/i }))
+      .getByRole('button', { name: /^light$/i })
+      .or(page.getByRole('radio', { name: /^light$/i }))
       .first()
       .click();
     await navigatePrimaryTab(page, 'Home');
@@ -628,12 +650,10 @@ test.describe('F8 — Accessibility & Ergonomics Baseline', () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openNavDrawer(page);
+    await expect(page.locator('[role="dialog"]')).toHaveCount(1);
     await page.keyboard.press('Escape');
 
-    const dialogCount = await page.locator('[role="dialog"]').count();
-    if (dialogCount > 0) {
-      await expect(page.locator('[role="dialog"]').first()).toBeHidden();
-    }
+    await expect(page.locator('[role="dialog"]')).toHaveCount(0);
     errors.assertNoErrors();
   });
 
@@ -723,7 +743,7 @@ test.describe('F9 — Responsive Layout & Mobile Keyboard Handling', () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await navigatePrimaryTab(page, 'Prompts');
-    const editor = page.locator('textarea').first();
+    const editor = page.getByLabel('Prompt', { exact: true });
     await editor.focus();
 
     await page.setViewportSize({ width: 390, height: 450 });
@@ -760,12 +780,8 @@ test.describe('F10 — Primary Bottom Nav + Secondary Drawer', () => {
         .locator('nav')
         .getByRole('link', { name: new RegExp(`^${label}$`, 'i') })
         .first();
-      if (await navLink.isVisible().catch(() => false)) {
-        const ariaCurrent = await navLink.getAttribute('aria-current');
-        if (ariaCurrent !== null) {
-          expect(ariaCurrent).toBe('page');
-        }
-      }
+      await expect(navLink).toBeVisible();
+      await expect(navLink).toHaveAttribute('aria-current', 'page');
     }
     errors.assertNoErrors();
   });
@@ -810,10 +826,7 @@ test.describe('F10 — Primary Bottom Nav + Secondary Drawer', () => {
     await navigateDrawerRoute(page, /workflow/i);
     await expect(page).toHaveURL(/\/workflows$/);
 
-    const dialogCount = await page.locator('[role="dialog"]').count();
-    if (dialogCount > 0) {
-      await expect(page.locator('[role="dialog"]').first()).toBeHidden();
-    }
+    await expect(page.locator('[role="dialog"]')).toHaveCount(0);
     errors.assertNoErrors();
   });
 

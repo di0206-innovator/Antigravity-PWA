@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { projectsRepo } from "../../db/repo";
 import { useAppStore } from "../../stores/useAppStore";
 import type { Project } from "../../types/domain";
@@ -14,6 +14,15 @@ interface Props {
 export function DeleteProjectSheet({ project, onClose, onDeleted }: Props) {
   const addToast = useAppStore((s) => s.addToast);
   const [busy, setBusy] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   if (!project) return null;
   return (
     <Sheet
@@ -27,7 +36,7 @@ export function DeleteProjectSheet({ project, onClose, onDeleted }: Props) {
         prompts are kept but detached from the project.
       </p>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" disabled={busy} onClick={onClose}>
           Cancel
         </Button>
         <Button
@@ -38,15 +47,15 @@ export function DeleteProjectSheet({ project, onClose, onDeleted }: Props) {
             try {
               await projectsRepo.remove(project.id);
               addToast("Project deleted.", "success");
+              if (mountedRef.current) setBusy(false);
               onDeleted?.();
               onClose();
             } catch (e) {
+              if (mountedRef.current) setBusy(false);
               addToast(
                 e instanceof Error ? e.message : "Could not delete project.",
                 "error",
               );
-            } finally {
-              setBusy(false);
             }
           }}
         >

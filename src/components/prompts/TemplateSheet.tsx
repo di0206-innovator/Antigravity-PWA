@@ -21,9 +21,14 @@ export interface TemplateSheetProps {
 
 export function TemplateSheet({ open, onClose, onUse, onEdit, onDeleted }: TemplateSheetProps) {
   const addToast = useAppStore((s) => s.addToast);
-  const { data } = useLive(() => db.prompts.orderBy('updatedAt').reverse().toArray(), []);
+  const { data, loading, error } = useLive(() => db.prompts.orderBy('updatedAt').reverse().toArray(), []);
   const [query, setQuery] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const handleClose = () => {
+    setConfirmId(null);
+    onClose();
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -47,7 +52,7 @@ export function TemplateSheet({ open, onClose, onUse, onEdit, onDeleted }: Templ
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title="Prompt templates" description="Insert, edit, duplicate or delete saved templates.">
+    <Sheet open={open} onClose={handleClose} title="Prompt templates" description="Insert, edit, duplicate or delete saved templates.">
       <div className="space-y-3">
         <Input
           label="Search templates"
@@ -56,7 +61,13 @@ export function TemplateSheet({ open, onClose, onUse, onEdit, onDeleted }: Templ
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Title, tag or text"
         />
-        {filtered.length === 0 ? (
+        {error ? (
+          <p role="alert" className="text-sm text-[var(--status-danger)]">
+            Could not load templates.
+          </p>
+        ) : loading ? (
+          <p className="text-sm text-[var(--text-secondary)]">Loading templates…</p>
+        ) : filtered.length === 0 ? (
           <EmptyState title="No templates found" description="Try a different search, or save the current prompt as a template." />
         ) : (
           <ul className="space-y-2">
@@ -75,13 +86,36 @@ export function TemplateSheet({ open, onClose, onUse, onEdit, onDeleted }: Templ
                   </div>
                 ) : null}
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => onUse(t, 'replace')} aria-label={`Use template ${t.title}`}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setConfirmId(null);
+                      onUse(t, 'replace');
+                    }}
+                    aria-label={`Use template ${t.title}`}
+                  >
                     Use
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => onUse(t, 'append')} aria-label={`Append template ${t.title}`}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setConfirmId(null);
+                      onUse(t, 'append');
+                    }}
+                    aria-label={`Append template ${t.title}`}
+                  >
                     <Plus className="h-4 w-4" aria-hidden="true" /> Append
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => onEdit(t)} aria-label={`Edit template ${t.title}`}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setConfirmId(null);
+                      onEdit(t);
+                    }}
+                    aria-label={`Edit template ${t.title}`}
+                  >
                     <Pencil className="h-4 w-4" aria-hidden="true" /> Edit
                   </Button>
                   <Button

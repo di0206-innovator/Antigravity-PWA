@@ -10,12 +10,13 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { DisclosureBanner } from '../components/ui/DisclosureBanner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { logActivity } from '../db/activityService';
 import { db } from '../db/database';
 import { projectsRepo } from '../db/repo';
 import { useLive } from '../hooks/useLive';
 import { OFFICIAL_ANTIGRAVITY_BASE_URL, openOfficialUrl } from '../services/security';
 import { useAppStore } from '../stores/useAppStore';
-import type { TaskStatus } from '../types/domain';
+import type { TaskStatus, WorkflowEntry } from '../types/domain';
 
 const linkBtn =
   'touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-strong)] px-4 py-2 text-sm font-medium text-[var(--text-primary)]';
@@ -38,7 +39,21 @@ export function ProjectDetailPage() {
   const project = useLive(() => (id ? db.projects.get(id) : undefined), [id]);
   const prompts = useLive(() => (id ? db.prompts.where('projectId').equals(id).toArray() : []), [id]);
   const tasks = useLive(() => (id ? db.tasks.where('projectId').equals(id).toArray() : []), [id]);
-  const skills = useLive(async () => (await db.skills.toArray()).filter((s) => s.isFavorite), []);
+  const skills = useLive(() => db.skills.filter(s => s.isFavorite).toArray(), []);
+  const workflows = useLive(() => db.workflows.orderBy('title').toArray(), []);
+
+  if (project.error) {
+    return (
+      <div className="space-y-4">
+        <p role="alert" className="text-sm text-[var(--status-danger)]">
+          Could not load project: {project.error.message}
+        </p>
+        <Link to="/projects" className={linkBtn}>
+          Back to Projects
+        </Link>
+      </div>
+    );
+  }
 
   if (project.loading) return <p className="text-sm text-[var(--text-secondary)]">Loading project…</p>;
 
@@ -62,12 +77,46 @@ export function ProjectDetailPage() {
   function openProject() {
     if (!p) return;
     const r = openOfficialUrl(p.officialUrl);
-    if (!r.opened) addToast(r.error ?? 'Could not open URL.', 'error');
+    if (!r.opened) {
+      addToast(r.error ?? 'Could not open URL.', 'error');
+      return;
+    }
+    void logActivity(
+      {
+        category: 'project',
+        description: `Opened saved official Antigravity project URL for "${p.title}"`,
+        projectId: p.id,
+      }
+    ).catch(() => undefined);
   }
 
   function openBase() {
+    if (!p) return;
     const r = openOfficialUrl(OFFICIAL_ANTIGRAVITY_BASE_URL);
-    if (!r.opened) addToast(r.error ?? 'Could not open Antigravity.', 'error');
+    if (!r.opened) {
+      addToast(r.error ?? 'Could not open Antigravity.', 'error');
+      return;
+    }
+    void logActivity(
+      {
+        category: 'project',
+        description: `Opened official Antigravity from project "${p.title}"`,
+        projectId: p.id,
+      }
+    ).catch(() => undefined);
+  }
+
+  function sendWorkflowToStudio(w: WorkflowEntry) {
+    if (!p) return;
+    const body = w.copyablePrompt || w.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    queuePromptInjection({
+      source: 'workflow',
+      mode: 'append',
+      title: `${p.title} — ${w.title}`,
+      body,
+      tags: w.tags,
+    });
+    navigate('/prompts');
   }
 
   return (
@@ -178,7 +227,11 @@ export function ProjectDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(tasks.data ?? []).length === 0 ? (
+          {tasks.error ? (
+            <p role="alert" className="text-sm text-[var(--status-danger)]">
+              Could not load tasks.
+            </p>
+          ) : (tasks.data ?? []).length === 0 ? (
             <p className="text-sm text-[var(--text-secondary)]">No tasks linked to this project.</p>
           ) : (
             <ul className="space-y-2">
@@ -201,7 +254,11 @@ export function ProjectDetailPage() {
           <CardTitle>Associated prompts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(prompts.data ?? []).length === 0 ? (
+          {prompts.error ? (
+            <p role="alert" className="text-sm text-[var(--status-danger)]">
+              Could not load prompts.
+            </p>
+          ) : (prompts.data ?? []).length === 0 ? (
             <p className="text-sm text-[var(--text-secondary)]">No prompts linked to this project.</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
@@ -224,7 +281,11 @@ export function ProjectDetailPage() {
           <CardDescription>Your favourite skills. Skills are not tied to individual projects.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(skills.data ?? []).length === 0 ? (
+          {skills.error ? (
+            <p role="alert" className="text-sm text-[var(--status-danger)]">
+              Could not load skills.
+            </p>
+          ) : (skills.data ?? []).length === 0 ? (
             <p className="text-sm text-[var(--text-secondary)]">No favourite skills yet.</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
@@ -246,7 +307,33 @@ export function ProjectDetailPage() {
           <CardTitle>Workflow templates</CardTitle>
           <CardDescription>Reusable checklists you can copy into a prompt.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
+          {workflows.error ? (
+            <p role="alert" className="text-sm text-[var(--status-danger)]">
+              Could not load workflows.
+            </p>
+          ) : (workflows.data ?? []).length === 0 ? (
+            <p className="text-sm text-[var(--text-secondary)]">No workflow templates saved yet.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {(workflows.data ?? []).slice(0, 5).map((w) => (
+                <li key={w.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="break-words font-medium">{w.title}</span>{' '}
+                    <Badge tone="neutral">{w.category}</Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    aria-label={`Use workflow ${w.title} in Prompt Studio`}
+                    onClick={() => sendWorkflowToStudio(w)}
+                  >
+                    <Send className="h-3.5 w-3.5" aria-hidden="true" /> Use in Studio
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
           <Link to="/workflows" className={linkBtn}>
             Open Workflow Library
           </Link>

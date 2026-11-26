@@ -73,4 +73,51 @@ describe('SetupCenterPage', () => {
     await user.click(screen.getByRole('button', { name: 'Copy command agy remote-control start' }));
     expect(writeText).toHaveBeenCalledWith('agy remote-control start');
   });
+
+  it('uses high-contrast --text-code token on CLI reference code blocks across dark and light themes', () => {
+    const nodeProcess = (
+      globalThis as unknown as {
+        process?: {
+          cwd: () => string;
+          getBuiltinModule?: (id: string) => {
+            readFileSync: (filePath: string, encoding: string) => string;
+          };
+        };
+      }
+    ).process;
+    const fsModule = nodeProcess?.getBuiltinModule?.('node:fs');
+    const pathModule = (
+      nodeProcess as unknown as {
+        getBuiltinModule?: (id: string) => { resolve: (...parts: string[]) => string };
+      }
+    )?.getBuiltinModule?.('node:path');
+    expect(fsModule).toBeDefined();
+    expect(pathModule).toBeDefined();
+
+    const indexCss = fsModule!.readFileSync(
+      pathModule!.resolve(nodeProcess!.cwd(), 'src/index.css'),
+      'utf8'
+    );
+    const darkBlock = indexCss.match(/:root,\s*\[data-theme="dark"\]\s*\{[\s\S]*?\}/)?.[0] ?? '';
+    const lightBlock = indexCss.match(/\[data-theme="light"\]\s*\{[\s\S]*?\}/)?.[0] ?? '';
+
+    expect(darkBlock).toContain('--text-code: #f8fafc;');
+    expect(lightBlock).toContain('--text-code: #f8fafc;');
+    expect(lightBlock).toContain('--accent-primary: #1d4ed8;');
+    expect(lightBlock).toContain('--status-warn: #92400e;');
+
+    const { container } = render(
+      <MemoryRouter initialEntries={['/setup']}>
+        <SetupCenterPage />
+      </MemoryRouter>
+    );
+
+    const codeBlocks = Array.from(container.querySelectorAll('pre'));
+    expect(codeBlocks).toHaveLength(5);
+    for (const pre of codeBlocks) {
+      expect(pre.className).toContain('bg-[var(--bg-code)]');
+      expect(pre.className).toContain('text-[var(--text-code)]');
+      expect(pre.className).not.toContain('text-[var(--text-primary)]');
+    }
+  });
 });

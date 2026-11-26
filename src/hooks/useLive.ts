@@ -7,20 +7,57 @@ export interface LiveResult<T> {
   error: Error | undefined;
 }
 
+function serializeDeps(deps: readonly unknown[]): string {
+  try {
+    return JSON.stringify(deps, (_, v) => (v === undefined ? '__undefined__' : v));
+  } catch {
+    return String(deps.length);
+  }
+}
+
+interface InternalState<T> extends LiveResult<T> {
+  depsKey: string;
+}
+
 /** Subscribes to a Dexie liveQuery; re-runs when `deps` change. `data` is undefined until first load. */
 export function useLive<T>(querier: () => Promise<T> | T, deps: readonly unknown[] = []): LiveResult<T> {
-  const [state, setState] = useState<LiveResult<T>>({ data: undefined, loading: true, error: undefined });
+  const depsKey = serializeDeps(deps);
+  const [state, setState] = useState<InternalState<T>>({
+    data: undefined,
+    loading: true,
+    error: undefined,
+    depsKey,
+  });
   const ref = useRef(querier);
   useEffect(() => {
     ref.current = querier;
   });
   useEffect(() => {
+    let active = true;
     const sub = liveQuery(() => ref.current()).subscribe({
-      next: (data) => setState({ data, loading: false, error: undefined }),
-      error: (e) => setState({ data: undefined, loading: false, error: e instanceof Error ? e : new Error(String(e)) }),
+      next: (data) => {
+        if (!active) return;
+        setState({ data, loading: false, error: undefined, depsKey });
+      },
+      error: (e) => {
+        if (!active) return;
+        setState({
+          data: undefined,
+          loading: false,
+          error: e instanceof Error ? e : new Error(String(e)),
+          depsKey,
+        });
+      },
     });
-    return () => sub.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return state;
+    return () => {
+      active = false;
+      sub.unsubscribe();
+    };
+  }, [depsKey]);
+
+  if (state.depsKey !== depsKey) {
+    return { data: undefined, loading: true, error: undefined };
+  }
+
+  return { data: state.data, loading: state.loading, error: state.error };
 }

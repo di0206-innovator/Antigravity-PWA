@@ -39,6 +39,11 @@ test.beforeEach(async ({ page }) => {
   await resetAppState(page);
 });
 
+test.afterEach(() => {
+  networkGuard.assertClean();
+  errors.assertNoErrors();
+});
+
 test.describe('F11 — Home Header & Locally Knowable Connection Status', () => {
   test('F11.1: Home header displays AG Pocket identity, time-based greeting, and current date', async ({
     page,
@@ -52,9 +57,20 @@ test.describe('F11 — Home Header & Locally Knowable Connection Status', () => 
     const combined = `${headerText}\n${mainText}`;
     expect(combined).toMatch(/good (morning|afternoon|evening)|hello|welcome/i);
 
-    const now = new Date();
-    const month = now.toLocaleDateString('en-US', { month: 'short' });
-    expect(combined).toContain(`${month} ${now.getDate()}`);
+    const expectedDateParts = await page.evaluate(() => {
+      const now = new Date();
+      const formatted = new Intl.DateTimeFormat(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      }).format(now);
+      const shortMonth = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(now);
+      const dayNumeric = new Intl.DateTimeFormat(undefined, { day: 'numeric' }).format(now);
+      return { formatted, shortMonth, dayNumeric };
+    });
+    expect(combined).toContain(expectedDateParts.formatted);
+    expect(combined).toContain(expectedDateParts.shortMonth);
+    expect(combined).toContain(expectedDateParts.dayNumeric);
     errors.assertNoErrors();
   });
 
@@ -88,6 +104,8 @@ test.describe('F11 — Home Header & Locally Knowable Connection Status', () => 
   test('F11.4: completing setup steps updates local connection readiness on Home', async ({
     page,
   }) => {
+    await expect(page.locator('main')).toContainText(/not configured/i);
+
     await page.goto(ROUTES.setup, { waitUntil: 'domcontentloaded' });
     const pending = page.getByRole('button', { name: /^mark done$/i });
     await expect(pending.first()).toBeVisible();
@@ -99,15 +117,31 @@ test.describe('F11 — Home Header & Locally Knowable Connection Status', () => 
 
     await navigatePrimaryTab(page, 'Home');
     const homeText = await page.locator('main').innerText();
-    expect(homeText).toMatch(/ready to open|setup|not verified/i);
+    expect(homeText).toMatch(/ready to open/i);
+    expect(homeText).not.toMatch(/not configured/i);
     errors.assertNoErrors();
   });
 
   test('F11.5: Home status area discloses that live remote Antigravity connection cannot be verified locally', async ({
     page,
   }) => {
+    await expect(page.locator('main')).toContainText(/setup readiness \(local only\):/i);
+
+    // Completing only step 1 (without mobile confirmation) surfaces explicit non-verification state.
+    await page.goto(ROUTES.setup, { waitUntil: 'domcontentloaded' });
+    const firstMarkDone = page.getByRole('button', { name: /^mark done$/i }).first();
+    await expect(firstMarkDone).toBeVisible();
+    await firstMarkDone.click();
+    await expect(page.getByRole('button', { name: /^done$/i }).first()).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await navigatePrimaryTab(page, 'Home');
     const homeText = await page.locator('main').innerText();
-    expect(homeText).toMatch(/not verified|cannot verify|locally|remote/i);
+    expect(homeText).toMatch(/remote connection not verified/i);
+    expect(homeText).toMatch(/not both confirmed/i);
+    expect(homeText).not.toMatch(/ready to open/i);
     errors.assertNoErrors();
   });
 });
@@ -210,16 +244,16 @@ test.describe('F13 — Home Quick Actions, Pinned Projects & Personal Task Overv
   test('F13.3: Open Antigravity quick action targets official https://antigravity.google.com', async ({
     page,
   }) => {
-    const quickOpen = page
-      .locator('main')
-      .getByRole('button', { name: /^open antigravity$/i })
-      .or(page.locator('main').getByRole('link', { name: /^open antigravity$/i }))
-      .last();
+    const quickActionsSection = page.getByRole('region', { name: /quick actions/i });
+    const quickOpen = quickActionsSection.getByRole('button', {
+      name: /^open antigravity\b/i,
+    });
+    await expect(quickOpen).toHaveCount(1);
     await triggerAndVerifyOfficialUrl(page, quickOpen, OFFICIAL_URLS.base);
     errors.assertNoErrors();
   });
 
-  test('F13.4: New Project and New Task Note quick actions navigate to /projects and /tasks', async ({
+  test('F13.4: New Project and New Task Note quick actions navigate to /projects and /tasks and open their dialogs', async ({
     page,
   }) => {
     await page
@@ -231,7 +265,7 @@ test.describe('F13 — Home Quick Actions, Pinned Projects & Personal Task Overv
     await expect(page).toHaveURL(/\/projects$/);
     await expectHeading(page, /projects/i);
     // The quick action also opens the create form; dismiss it before navigating away.
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /new project/i })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
 
@@ -244,6 +278,9 @@ test.describe('F13 — Home Quick Actions, Pinned Projects & Personal Task Overv
       .click();
     await expect(page).toHaveURL(/\/tasks$/);
     await expectHeading(page, /task/i);
+    await expect(page.getByRole('dialog', { name: /new task/i })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
     errors.assertNoErrors();
   });
 
@@ -263,6 +300,7 @@ test.describe('F13 — Home Quick Actions, Pinned Projects & Personal Task Overv
       }
     }
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Home');
     await expect(page.locator('main')).toContainText(/pinned/i);
@@ -280,6 +318,7 @@ test.describe('F13 — Home Quick Actions, Pinned Projects & Personal Task Overv
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Verify PWA Manifest');
     await page.getByRole('dialog').getByRole('button', { name: /^(create task|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Home');
     await expect(page.locator('main')).toContainText(/task/i);
@@ -502,8 +541,28 @@ test.describe('F26 — Service Worker Caching, Update Prompt & Exclusions', () =
     const swRes = await page.request.get('/sw.js');
     expect(swRes.status()).toBe(200);
     const swText = await swRes.text();
-    expect(swText).not.toMatch(/CacheFirst.*antigravity\.google/i);
-    expect(swText).not.toMatch(/StaleWhileRevalidate.*accounts\.google/i);
+
+    // Positive Workbox NetworkOnly exclusions (registerRoute puts pattern before strategy).
+    expect(swText).toMatch(/antigravity\\\.google[\s\S]{0,120}NetworkOnly/i);
+    expect(swText).toMatch(/google\\\.com[\s\S]{0,120}NetworkOnly/i);
+    expect(swText).toMatch(/auth\|oauth[\s\S]{0,120}NetworkOnly/i);
+
+    // NavigateFallback denylist must exclude auth/oauth/token endpoints.
+    expect(swText).toMatch(/denylist:[\s\S]*(?:\\\/|\/)auth/i);
+    expect(swText).toMatch(/denylist:[\s\S]*(?:\\\/|\/)oauth/i);
+    expect(swText).toMatch(/denylist:[\s\S]*(?:\\\/|\/)token/i);
+
+    // Prompt update mode: skipWaiting only on explicit SKIP_WAITING message, never unconditionally on install.
+    expect(swText).not.toMatch(/addEventListener\(\s*["']install["'][\s\S]{0,150}skipWaiting/i);
+    expect(swText).toMatch(/SKIP_WAITING[\s\S]{0,60}skipWaiting/i);
+
+    // Never pair caching strategies with Antigravity/Google origins in either order.
+    expect(swText).not.toMatch(
+      /(?:CacheFirst|NetworkFirst|StaleWhileRevalidate|CacheOnly)[\s\S]{0,120}(?:antigravity\\?\.google|accounts\\?\.google|google\\?\.com)/i,
+    );
+    expect(swText).not.toMatch(
+      /(?:antigravity\\?\.google|accounts\\?\.google|google\\?\.com)[\s\S]{0,120}(?:CacheFirst|NetworkFirst|StaleWhileRevalidate|CacheOnly)/i,
+    );
     errors.assertNoErrors();
   });
 
@@ -533,7 +592,21 @@ test.describe('F26 — Service Worker Caching, Update Prompt & Exclusions', () =
   }) => {
     await navigatePrimaryTab(page, 'Settings');
     await expectHeading(page, /settings/i);
-    await expect(page.locator('main')).toContainText(/pwa|install|offline|storage|data/i);
+    await expect(page.locator('main')).toContainText('Install AG Pocket (PWA)');
+    await expect(page.locator('main')).toContainText(/Browser Tab|Installed \(Standalone\)/);
+    await expect(
+      page.getByRole('region', { name: /application update available/i }),
+    ).toHaveCount(0);
+
+    const swReady = await page.evaluate(async () => {
+      if (!('serviceWorker' in navigator)) return false;
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready.then((r) => Boolean(r.active)),
+        new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), 5000)),
+      ]);
+      return reg;
+    });
+    expect(swReady).toBe(true);
     errors.assertNoErrors();
   });
 });
@@ -578,8 +651,12 @@ test.describe('F27 — Platform Install Guides & Offline Banner', () => {
     try {
       await context.setOffline(true);
       await page.evaluate(() => window.dispatchEvent(new Event('offline')));
-      await expect(page.locator('body')).toContainText(/offline/i);
-      await expect(page.locator('body')).toContainText(/remote control|internet|local/i);
+      const offlineBanner = page.getByRole('status').filter({ hasText: /you are offline/i });
+      await expect(offlineBanner).toBeVisible();
+      await expect(offlineBanner).toContainText(/work offline/i);
+      await expect(offlineBanner).toContainText(
+        /antigravity\.google\.com.*requires an internet connection/i,
+      );
     } finally {
       await context.setOffline(false);
     }
@@ -676,13 +753,46 @@ test.describe('F28 — Dexie Typed Versioned Schema & Persistence', () => {
     page,
   }) => {
     await navigatePrimaryTab(page, 'Prompts');
-    const editor = page.locator('textarea').first();
+    const editor = page.getByLabel('Prompt', { exact: true });
     const draftContent = 'Persistent autosave prompt draft E2E-M1';
     await editor.fill(draftContent);
 
-    await page.waitForTimeout(600);
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          (dbName) =>
+            new Promise<string | null>((resolve) => {
+              const open = window.indexedDB.open(dbName);
+              open.onerror = () => resolve(null);
+              open.onsuccess = () => {
+                const idb = open.result;
+                if (!idb.objectStoreNames.contains('promptDrafts')) {
+                  idb.close();
+                  resolve(null);
+                  return;
+                }
+                const req = idb
+                  .transaction('promptDrafts', 'readonly')
+                  .objectStore('promptDrafts')
+                  .get('active');
+                req.onsuccess = () => {
+                  idb.close();
+                  const rec = req.result as { body?: string } | undefined;
+                  resolve(rec?.body ?? null);
+                };
+                req.onerror = () => {
+                  idb.close();
+                  resolve(null);
+                };
+              };
+            }),
+          DEXIE_DB_NAME,
+        ),
+      )
+      .toBe(draftContent);
+
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('textarea').first()).toHaveValue(draftContent);
+    await expect(page.getByLabel('Prompt', { exact: true })).toHaveValue(draftContent);
     errors.assertNoErrors();
   });
 
@@ -696,6 +806,7 @@ test.describe('F28 — Dexie Typed Versioned Schema & Persistence', () => {
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('IndexedDB Persisted Repo');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page.locator('main')).toContainText('IndexedDB Persisted Repo');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -715,6 +826,7 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Exportable Project');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Settings');
     const downloadPromise = page.waitForEvent('download');
@@ -739,6 +851,7 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Restored Backup Project');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Settings');
     await page.getByRole('button', { name: /export/i }).first().click();
@@ -748,9 +861,11 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
     await resetAppState(page);
     await navigatePrimaryTab(page, 'Settings');
 
-    const fileInput = page.locator('input[type="file"]').first();
+    const fileInput = page.getByLabel('Import local data JSON file');
     await setJsonInputFile(fileInput, 'ag-pocket-backup.json', backupJson);
-    await expect(page.locator('body')).toContainText(/import|restored|success/i);
+    const importSummary = page.getByRole('status').filter({ hasText: /import summary/i });
+    await expect(importSummary).toBeVisible();
+    await expect(importSummary).toContainText(/imported:\s*1 projects/i);
 
     await navigatePrimaryTab(page, 'Projects');
     await expect(page.locator('main')).toContainText('Restored Backup Project');
@@ -769,19 +884,22 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Dedupe Unique Project');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Settings');
     await page.getByRole('button', { name: /export/i }).first().click();
     await expect.poll(async () => (await getLatestExportedText(page)).length).toBeGreaterThan(10);
     const backupJson = await getLatestExportedText(page);
 
-    const fileInput = page.locator('input[type="file"]').first();
+    const fileInput = page.getByLabel('Import local data JSON file');
     await setJsonInputFile(fileInput, 'ag-pocket-backup.json', backupJson);
-    await expect(page.locator('body')).toContainText(/import|restored|success|merged/i);
+    const importSummary = page.getByRole('status').filter({ hasText: /import summary/i });
+    await expect(importSummary).toBeVisible();
+    await expect(importSummary).toContainText(/imported:\s*0 projects/i);
+    await expect(importSummary).toContainText(/skipped duplicates:\s*1 projects/i);
 
     await navigatePrimaryTab(page, 'Projects');
-    const occurrences = await page.getByText('Dedupe Unique Project', { exact: false }).count();
-    expect(occurrences).toBe(1);
+    await expect(page.getByText('Dedupe Unique Project', { exact: false })).toHaveCount(1);
     errors.assertNoErrors();
   });
 
@@ -795,16 +913,17 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Keep Me Project');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Settings');
-    await page.getByRole('button', { name: /clear all/i }).first().click();
+    await page.getByRole('button', { name: /clear all local data/i }).click();
 
-    const cancelBtn = page
-      .locator('[role="dialog"], main')
-      .getByRole('button', { name: /cancel/i })
-      .first();
+    const clearDialog = page.getByRole('dialog', { name: /clear all local data/i });
+    await expect(clearDialog).toBeVisible();
+    const cancelBtn = clearDialog.getByRole('button', { name: /^cancel$/i });
     await expect(cancelBtn).toBeVisible();
     await cancelBtn.click();
+    await expect(clearDialog).toBeHidden();
 
     await navigatePrimaryTab(page, 'Projects');
     await expect(page.locator('main')).toContainText('Keep Me Project');
@@ -821,16 +940,17 @@ test.describe('F29 — JSON Export/Import, Duplicate Prevention, Clear All & Pri
       .click();
     await page.getByRole('dialog').getByLabel(/^title$/i).fill('Delete Me Project');
     await page.getByRole('dialog').getByRole('button', { name: /^(create project|save changes)$/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
 
     await navigatePrimaryTab(page, 'Settings');
-    await page.getByRole('button', { name: /clear all/i }).first().click();
+    await page.getByRole('button', { name: /clear all local data/i }).click();
 
-    const confirmBtn = page
-      .locator('[role="dialog"], main')
-      .getByRole('button', { name: /confirm|delete all|yes, clear|erase/i })
-      .first();
+    const clearDialog = page.getByRole('dialog', { name: /clear all local data/i });
+    await expect(clearDialog).toBeVisible();
+    const confirmBtn = clearDialog.getByRole('button', { name: /confirm clear all data/i });
     await expect(confirmBtn).toBeVisible();
     await confirmBtn.click();
+    await expect(clearDialog).toBeHidden();
 
     await navigatePrimaryTab(page, 'Projects');
     await expect(page.locator('main')).not.toContainText('Delete Me Project');
@@ -874,10 +994,35 @@ test.describe('F30 — Official Integration Boundary & Docs Consistency', () => 
     );
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
-      const isOfficial =
-        href.startsWith(OFFICIAL_URLS.base) || href.startsWith(OFFICIAL_URLS.docsPrefix);
-      expect(isOfficial, `Unexpected external link found: ${href}`).toBe(true);
+      let parsed: URL | null;
+      try {
+        parsed = new URL(href);
+      } catch {
+        parsed = null;
+      }
+      expect(parsed, `Invalid external URL found: ${href}`).not.toBeNull();
+      if (parsed) {
+        const isOfficialBase =
+          parsed.origin === 'https://antigravity.google.com' && parsed.pathname === '/';
+        const isOfficialDocs =
+          parsed.origin === 'https://antigravity.google' &&
+          parsed.pathname.startsWith('/docs/');
+        expect(isOfficialBase || isOfficialDocs, `Unexpected external link found: ${href}`).toBe(
+          true,
+        );
+      }
     }
+    const docsLinks = hrefs.filter((href) => {
+      try {
+        const parsed = new URL(href);
+        return (
+          parsed.origin === 'https://antigravity.google' && parsed.pathname.startsWith('/docs/')
+        );
+      } catch {
+        return false;
+      }
+    });
+    expect(docsLinks.length).toBeGreaterThanOrEqual(3);
     errors.assertNoErrors();
   });
 

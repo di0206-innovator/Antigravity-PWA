@@ -11,3 +11,4 @@ Hallmark · v2.0.0
 - Sections: feature cards, activity feed, quick actions
 - Motion: subtle fade‑in, translateY on scroll, prefers‑reduced‑motion fallback
 - Sweep: linted with sloplint, accessible focus‑visible, overflow‑x: clip
+

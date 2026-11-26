@@ -54,7 +54,7 @@ export default defineConfig({
   webServer: env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+        command: 'npm run preview -- --port 4173 --strictPort',
         url: 'http://localhost:4173',
         reuseExistingServer: !isCI,
         timeout: 120_000,

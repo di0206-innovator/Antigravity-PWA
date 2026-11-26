@@ -29,16 +29,14 @@ export function ProjectsPage() {
   const [editing, setEditing] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState<Project | null>(null);
 
-  const [seenNonce, setSeenNonce] = useState<number | null>(null);
-  if (quickActionTrigger && quickActionTrigger.nonce !== seenNonce) {
-    setSeenNonce(quickActionTrigger.nonce);
-    if (quickActionTrigger.action === 'new_project') {
+  useEffect(() => {
+    if (quickActionTrigger?.action === 'new_project') {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setEditing(null);
       setFormOpen(true);
+      clearQuickAction();
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
-  }
-  useEffect(() => {
-    if (quickActionTrigger?.action === 'new_project') clearQuickAction();
   }, [quickActionTrigger, clearQuickAction]);
 
   const filtered = useMemo(() => {
@@ -46,7 +44,10 @@ export function ProjectsPage() {
     return sortProjects(data ?? []).filter(
       (p) =>
         (category === 'all' || p.category === category) &&
-        (!q || [p.title, p.machineName, p.workspaceLabel, p.description].some((v) => v.toLowerCase().includes(q)))
+        (!q ||
+          [p.title, p.machineName, p.workspaceLabel, p.description, p.notes].some((v) =>
+            v.toLowerCase().includes(q)
+          ))
     );
   }, [data, query, category]);
 
@@ -86,16 +87,13 @@ export function ProjectsPage() {
 
       {total > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="relative">
-            <Input
-              label="Search projects"
-              type="search"
-              value={query}
-              placeholder="Title, machine, workspace…"
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <Search className="pointer-events-none absolute bottom-3 right-3 h-4 w-4 text-[var(--text-muted)]" aria-hidden="true" />
-          </div>
+          <Input
+            label="Search projects"
+            type="search"
+            value={query}
+            placeholder="Title, machine, workspace…"
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="all">All categories</option>
             {PROJECT_CATEGORIES.map((c) => (
@@ -193,7 +191,14 @@ export function ProjectsPage() {
         </ul>
       )}
 
-      <ProjectFormSheet open={formOpen} project={editing} onClose={() => setFormOpen(false)} />
+      <ProjectFormSheet
+        open={formOpen}
+        project={editing}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
+      />
       <DeleteProjectSheet project={deleting} onClose={() => setDeleting(null)} />
     </div>
   );

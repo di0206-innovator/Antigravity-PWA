@@ -43,6 +43,9 @@ import {
   CardTitle,
 } from '../components/ui/Card';
 import { DisclosureBanner } from '../components/ui/DisclosureBanner';
+import ParallaxHero from '../components/ParallaxHero';
+
+
 import { EmptyState } from '../components/ui/EmptyState';
 
 function getGreeting(date: Date): string {
@@ -93,6 +96,8 @@ function getPriorityTone(priority: TaskItem['priority']) {
       return 'neutral' as const;
   }
 }
+
+
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -171,11 +176,12 @@ export function HomePage() {
       description: projectId
         ? 'Opened saved official Antigravity project URL'
         : 'Opened official Antigravity Remote Control',
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   return (
     <div className="space-y-5">
+      <ParallaxHero />
       {/* Header & Locally Knowable Status */}
       <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 sm:p-6 space-y-4">
         <div className="flex items-start justify-between gap-3">

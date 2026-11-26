@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -134,5 +134,46 @@ describe('SettingsPage', () => {
     createObjectUrlSpy.mockRestore();
     revokeObjectUrlSpy.mockRestore();
     anchorClickSpy.mockRestore();
+  });
+
+  it('defers URL.revokeObjectURL by 1000ms on JSON export and cleans up timers safely', async () => {
+    vi.useFakeTimers();
+    const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:deferred-url');
+    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {});
+
+    try {
+      render(
+        <MemoryRouter initialEntries={['/settings']}>
+          <SettingsPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Export Local Data/i }));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
+      expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+
+      // Must not revoke synchronously before browser starts download
+      expect(revokeObjectUrlSpy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(revokeObjectUrlSpy).toHaveBeenCalledTimes(1);
+      expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:deferred-url');
+    } finally {
+      vi.useRealTimers();
+      createObjectUrlSpy.mockRestore();
+      revokeObjectUrlSpy.mockRestore();
+      anchorClickSpy.mockRestore();
+    }
   });
 });
