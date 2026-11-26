@@ -1,5 +1,7 @@
-/* Hallmark v2.0.0 — AG Pocket OLED Dark & Light Token System | No literal colors beyond :root/theme blocks */
+/* Hallmark v2.0.0 — AG Pocket Nature-Editorial Design System */
+/* critique: nature palette + editorial type integrated with existing token system */
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 :root,
 [data-theme="dark"] {
@@ -123,6 +125,94 @@ kbd {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Nature-Editorial global overrides ── */
+
+/* Page background — subtle warm canvas in light mode */
+[data-theme="light"] {
+  --bg-canvas: #F4F1DF;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #EDE9D4;
+  --border-subtle: rgba(37,37,37,0.12);
+  --border-strong: rgba(37,37,37,0.25);
+  --text-primary: #252525;
+  --text-secondary: #3D4A2A;
+  --text-muted: #64705A;
+  --accent-primary: #526D30;
+  --accent-primary-solid: #526D30;
+  --accent-primary-hover: #3D5222;
+  --accent-primary-fg: #FFFFFF;
+  --accent-violet: #A45BE8;
+  --accent-violet-soft: rgba(164,91,232,0.12);
+  --accent-blue-soft: rgba(96,149,200,0.14);
+  --status-ok: #526D30;
+  --status-ok-bg: rgba(82,109,48,0.12);
+  --status-warn: #A67C00;
+  --status-warn-bg: rgba(166,124,0,0.12);
+  --status-danger: #C0392B;
+  --status-danger-bg: rgba(192,57,43,0.12);
+  --focus-ring: #526D30;
+  --backdrop: rgba(37,37,37,0.55);
+}
+
+/* Dark mode — keep existing deep OLED tokens, add nature accents */
+:root,
+[data-theme="dark"] {
+  --accent-primary: #A3D63E;
+  --accent-primary-solid: #8BBF30;
+  --accent-primary-hover: #74A020;
+  --accent-primary-fg: #252525;
+  --accent-violet: #A45BE8;
+  --accent-violet-soft: rgba(164,91,232,0.14);
+  --focus-ring: #A3D63E;
+}
+
+/* Nature-editorial card global style — applied via utility class */
+.nature-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg, 20px);
+  transition: transform var(--duration-short, 180ms) var(--ease-smooth, ease),
+              box-shadow var(--duration-short, 180ms) var(--ease-smooth, ease);
+}
+.nature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+}
+
+/* Glass card */
+.nature-glass-card {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: var(--radius-lg, 20px);
+}
+
+/* Floating chip */
+.nature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--chip-bg, rgba(244,241,223,0.95));
+  border: 1px solid var(--chip-border, rgba(37,37,37,0.10));
+  border-radius: var(--radius-pill, 999px);
+  padding: 0.3rem 0.8rem 0.3rem 0.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--nature-charcoal, #252525);
+}
+
+/* Section headings — nature editorial style */
+.nature-heading {
+  font-family: var(--font-display, "Inter Tight", sans-serif);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 [data-reduced-motion="true"] *,

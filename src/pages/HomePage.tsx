@@ -191,7 +191,7 @@ export function HomePage() {
               <p className="text-sm text-[var(--text-secondary)]">
                 {getGreeting(now)} — {formattedDate}
               </p>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)] nature-heading">
                 AG Pocket Command Center
               </h1>
             </div>
@@ -335,7 +335,7 @@ export function HomePage() {
       <section aria-labelledby="quick-actions-heading" className="space-y-2.5">
         <h2
           id="quick-actions-heading"
-          className="text-base sm:text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+          className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--text-primary)] nature-heading"
         >
           Quick Actions
         </h2>
@@ -347,9 +347,11 @@ export function HomePage() {
               triggerQuickAction('new_prompt');
               navigate('/prompts');
             }}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-green)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <PlusCircle className="h-5 w-5 text-[var(--accent-primary)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-lime, #A3D63E)'}}>
+              <PlusCircle className="h-5 w-5 text-[var(--nature-charcoal,#252525)]" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 New Prompt
@@ -363,9 +365,11 @@ export function HomePage() {
           <button
             type="button"
             onClick={() => handleOpenAntigravity(OFFICIAL_ANTIGRAVITY_BASE_URL)}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-sky)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <ExternalLink className="h-5 w-5 text-[var(--accent-primary)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-sky, #6095C8)'}}>
+              <ExternalLink className="h-5 w-5 text-white" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 Open Antigravity
@@ -383,9 +387,11 @@ export function HomePage() {
               triggerQuickAction('new_project');
               navigate('/projects');
             }}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-violet)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <FolderPlus className="h-5 w-5 text-[var(--accent-violet)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-violet, #A45BE8)'}}>
+              <FolderPlus className="h-5 w-5 text-white" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 New Project
@@ -402,9 +408,11 @@ export function HomePage() {
               triggerHaptic('light');
               navigate('/skills');
             }}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-violet)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <Sparkles className="h-5 w-5 text-[var(--accent-violet)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-violet, #A45BE8)'}}>
+              <Sparkles className="h-5 w-5 text-white" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 Browse Skills
@@ -422,9 +430,11 @@ export function HomePage() {
               triggerQuickAction('new_task');
               navigate('/tasks');
             }}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-sky)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <CheckSquare className="h-5 w-5 text-[var(--accent-primary)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-green, #7D9F40)'}}>
+              <CheckSquare className="h-5 w-5 text-white" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 New Task Note
@@ -441,9 +451,11 @@ export function HomePage() {
               triggerHaptic('light');
               navigate('/workflows');
             }}
-            className="touch-target flex flex-col items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 text-left hover:border-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer min-w-0"
+            className="touch-target flex flex-col items-start justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-left hover:border-[var(--nature-lime)] hover:shadow-md transition-all cursor-pointer min-w-0 nature-card"
           >
-            <GitBranch className="h-5 w-5 text-[var(--accent-violet)]" aria-hidden="true" />
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full" style={{background: 'var(--nature-lime, #A3D63E)'}}>
+              <GitBranch className="h-5 w-5 text-[var(--nature-charcoal,#252525)]" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-[var(--text-primary)]">
                 View Workflow Library

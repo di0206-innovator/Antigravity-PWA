@@ -1,42 +1,56 @@
-/* Hallmark Design Tokens */
+/* Hallmark v2.0.0 — AG Pocket Nature-Editorial Design Tokens */
+/* critique: oversized editorial type, scenic parallax hero, organic palette */
+
 :root {
-  /* Palette */
-  --color-primary: #1e3a8a;
-  /* Indigo 800 */
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #64748b;
-  /* Slate 500 */
-  --color-secondary-foreground: #ffffff;
-  --color-background: #f9fafb;
-  /* Gray 50 */
-  --color-surface: #ffffff;
-  --color-muted: #6b7280;
-  /* Gray 500 */
-  --color-accent: #10b981;
-  /* Emerald 500 */
-  --color-accent-foreground: #ffffff;
+  /* ── Nature-Editorial Palette ── */
+  --nature-sky: #6095C8;
+  --nature-green: #7D9F40;
+  --nature-meadow: #A4C84A;
+  --nature-olive: #526D30;
+  --nature-lime: #A3D63E;
+  --nature-violet: #A45BE8;
+  --nature-pink: #E94FD0;
+  --nature-cream: #F4F1DF;
+  --nature-charcoal: #252525;
+  --nature-white: #FFFFFF;
+  --nature-glass: rgba(255, 255, 255, 0.20);
+  --nature-glass-border: rgba(255, 255, 255, 0.35);
+
+  /* Semantic surface tokens (light theme) */
+  --surface-hero: var(--nature-sky);
+  --surface-card: var(--nature-cream);
+  --surface-glass: var(--nature-glass);
+  --surface-floating: rgba(244, 241, 223, 0.92);
 
   /* Typography */
+  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
   --font-sans: "Inter", system-ui, sans-serif;
-  --font-display: "Poppins", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Spacing */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Radius */
+  --radius-pill: 999px;
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
 
   /* Motion */
-  --duration-short: 150ms;
-  --duration-medium: 300ms;
+  --duration-short: 180ms;
+  --duration-medium: 320ms;
   --duration-long: 500ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Chip / floating label */
+  --chip-bg: rgba(244, 241, 223, 0.95);
+  --chip-border: rgba(37, 37, 37, 0.10);
+  --chip-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
 }
 
 /* Hallmark fallback – prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;

@@ -132,7 +132,7 @@ export function AppShell({ children }: AppShellProps) {
         Skip to main content
       </a>
 
-      <header className="safe-top sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/95 backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/90 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-1.5 min-[360px]:gap-2 px-2.5 py-2.5 min-[360px]:px-3 sm:px-6">
           <Link
             to="/"
@@ -140,7 +140,7 @@ export function AppShell({ children }: AppShellProps) {
           >
             <AgMonogram size={32} />
             <div className="min-w-0">
-              <span className="block truncate text-[15px] min-[360px]:text-base font-semibold tracking-tight text-[var(--text-primary)]">
+              <span className="block truncate text-[15px] min-[360px]:text-base font-bold tracking-tight text-[var(--text-primary)]" style={{fontFamily: 'var(--font-display, Inter Tight, Inter, sans-serif)'}}>
                 AG Pocket
               </span>
               <span className="hidden sm:block truncate text-xs text-[var(--text-muted)]">
@@ -166,7 +166,7 @@ export function AppShell({ children }: AppShellProps) {
               to="/settings"
               end
               aria-label="Open Settings"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors"
+              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--nature-green)] hover:bg-[var(--bg-elevated)] transition-colors"
             >
               <Settings className="h-5 w-5" aria-hidden="true" />
             </NavLink>
@@ -177,7 +177,7 @@ export function AppShell({ children }: AppShellProps) {
               aria-label="Open navigation menu"
               aria-expanded={navDrawerOpen}
               aria-controls="ag-nav-drawer"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
+              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--nature-green)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
             >
               <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -262,31 +262,33 @@ export function AppShell({ children }: AppShellProps) {
 
       <nav
         aria-label="Primary navigation"
-        className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 backdrop-blur-md"
+        className="safe-bottom fixed inset-x-0 bottom-0 z-30"
       >
-        <div className="mx-auto grid w-full max-w-2xl grid-cols-5 gap-1 px-1.5 py-1">
-          {PRIMARY_NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                onClick={() => triggerHaptic('light')}
-                className={({ isActive }) =>
-                  cn(
-                    'touch-target flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] sm:text-xs font-medium transition-colors min-w-0',
-                    isActive
-                      ? 'bg-[var(--accent-blue-soft)] text-[var(--accent-primary)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
-                  )
-                }
-              >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate max-w-full leading-none">{item.label}</span>
-              </NavLink>
-            );
-          })}
+        <div className="mx-auto max-w-md px-3 pb-2">
+          <div className="grid grid-cols-5 gap-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 px-1.5 py-1 shadow-lg backdrop-blur-xl">
+            {PRIMARY_NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => triggerHaptic('light')}
+                  className={({ isActive }) =>
+                    cn(
+                      'touch-target flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] sm:text-xs font-medium transition-colors min-w-0',
+                      isActive
+                        ? 'bg-[var(--accent-primary)] text-[var(--accent-primary-fg)]'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
+                    )
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate max-w-full leading-none">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
