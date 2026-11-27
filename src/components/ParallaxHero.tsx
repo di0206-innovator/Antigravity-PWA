@@ -1,46 +1,67 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  CheckSquare,
+  ExternalLink,
+  GitBranch,
+  Layers,
+  Terminal,
+  Waypoints,
+} from 'lucide-react';
+import { OFFICIAL_ANTIGRAVITY_BASE_URL, openOfficialUrl } from '../services/security';
+import { logActivity } from '../db/activityService';
 import './ParallaxHero.css';
 
 interface FloatingChip {
   label: string;
+  to: string;
   color: string;
-  icon: string;
-  style: React.CSSProperties;
-  rotate?: string;
+  icon: typeof Terminal;
+  rotate: string;
+  slotClass: string;
 }
 
-const chips: FloatingChip[] = [
+const FEATURE_CHIPS: FloatingChip[] = [
   {
     label: 'Prompt Studio',
+    to: '/prompts',
     color: '#A45BE8',
-    icon: '✦',
-    style: { top: '22%', right: '14%' },
-    rotate: '-2deg',
-  },
-  {
-    label: 'Skill Deck',
-    color: '#7D9F40',
-    icon: '◈',
-    style: { top: '38%', right: '8%' },
-    rotate: '2deg',
-  },
-  {
-    label: 'Workflow Library',
-    color: '#6095C8',
-    icon: '⬡',
-    style: { top: '52%', left: '8%' },
-    rotate: '-1deg',
+    icon: Terminal,
+    rotate: '-2.5deg',
+    slotClass: 'ph-chip--slot-1',
   },
   {
     label: 'Task Board',
+    to: '/tasks',
     color: '#E94FD0',
-    icon: '◉',
-    style: { top: '30%', left: '6%' },
-    rotate: '3deg',
+    icon: CheckSquare,
+    rotate: '2deg',
+    slotClass: 'ph-chip--slot-2',
+  },
+  {
+    label: 'Workflow Library',
+    to: '/workflows',
+    color: '#6095C8',
+    icon: GitBranch,
+    rotate: '-1.5deg',
+    slotClass: 'ph-chip--slot-3',
+  },
+  {
+    label: 'Skill Deck',
+    to: '/skills',
+    color: '#7D9F40',
+    icon: Layers,
+    rotate: '2.5deg',
+    slotClass: 'ph-chip--slot-4',
   },
 ];
 
-export default function ParallaxHero() {
+export interface ParallaxHeroProps {
+  onOpenAntigravity?: () => void;
+}
+
+export default function ParallaxHero({ onOpenAntigravity }: ParallaxHeroProps) {
   const [offset, setOffset] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
   const reducedMotion =
@@ -52,84 +73,116 @@ export default function ParallaxHero() {
     const onScroll = () => {
       if (!heroRef.current) return;
       const rect = heroRef.current.getBoundingClientRect();
-      if (rect.bottom > 0) setOffset(window.scrollY * 0.35);
+      if (rect.bottom > 0) setOffset(Math.min(window.scrollY * 0.28, 120));
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [reducedMotion]);
 
+  const handlePrimaryClick = () => {
+    if (onOpenAntigravity) {
+      onOpenAntigravity();
+      return;
+    }
+    const result = openOfficialUrl(OFFICIAL_ANTIGRAVITY_BASE_URL);
+    if (result.opened) {
+      void logActivity({
+        category: 'setup',
+        description: 'Opened official Antigravity Remote Control',
+      }).catch(() => {});
+    }
+  };
+
   return (
     <section
       ref={heroRef}
       className="ph-hero"
-      aria-label="AG Pocket — your personal command center for Antigravity"
+      aria-label="AG Pocket — Antigravity Mobile Command Center"
     >
-      {/* Parallax background */}
+      {/* Clean landscape background */}
       <div
         className="ph-bg"
-        style={{ transform: `translateY(${offset}px)` }}
+        style={{ transform: `translate3d(0, ${offset}px, 0)` }}
         aria-hidden="true"
       />
 
-      {/* Dark gradient overlay for text readability */}
+      {/* Restrained directional scrim for text legibility */}
       <div className="ph-overlay" aria-hidden="true" />
 
-      {/* Floating identity chip — top left */}
-      <div className="ph-identity" aria-hidden="true">
-        <span className="ph-identity__dot" />
-        <span className="ph-identity__label">AG Pocket · Command Center</span>
-      </div>
+      {/* Main 2-column responsive hero grid */}
+      <div className="ph-inner">
+        {/* Left column: branding, single headline, supporting text, CTAs */}
+        <div className="ph-main">
+          <div className="ph-identity">
+            <span className="ph-identity__dot" aria-hidden="true" />
+            <span className="ph-identity__label">
+              AG POCKET · Antigravity Mobile Command Center
+            </span>
+          </div>
 
-      {/* Floating category chips */}
-      {chips.map((chip) => (
-        <div
-          key={chip.label}
-          className="ph-chip"
-          style={{ ...chip.style, transform: `rotate(${chip.rotate ?? '0deg'})` }}
-          aria-hidden="true"
-        >
-          <span className="ph-chip__icon" style={{ background: chip.color }}>
-            {chip.icon}
-          </span>
-          <span className="ph-chip__text">{chip.label}</span>
+          <h1 className="ph-headline">
+            <span className="ph-headline__line">ANTIGRAVITY,</span>
+            <span className="ph-headline__line ph-headline__line--accent">
+              IN YOUR POCKET.
+            </span>
+          </h1>
+
+          <p className="ph-sub">
+            Your mobile command center. Craft prompts, manage projects and access your
+            Antigravity workflows from anywhere.
+          </p>
+
+          <div className="ph-actions">
+            <button
+              type="button"
+              onClick={handlePrimaryClick}
+              className="ph-btn ph-btn--primary"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Open Antigravity</span>
+            </button>
+
+            <Link to="/setup" className="ph-btn ph-btn--ghost">
+              <Waypoints className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Setup Guide</span>
+            </Link>
+          </div>
         </div>
-      ))}
 
-      {/* Main editorial headline */}
-      <div className="ph-content">
-        <h1 className="ph-headline">
-          <span className="ph-headline__line">Your</span>
-          <span className="ph-headline__line ph-headline__line--accent">Command</span>
-          <span className="ph-headline__line">Center.</span>
-        </h1>
-        <p className="ph-sub">
-          Craft prompts, manage projects and launch Antigravity from anywhere.
-        </p>
-        <div className="ph-actions">
-          <a
-            href="https://antigravity.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ph-btn ph-btn--primary"
-          >
-            Open Antigravity
-          </a>
-          <a href="#setup" className="ph-btn ph-btn--ghost">
-            Setup guide
-          </a>
-        </div>
-      </div>
+        {/* Right column: intentional floating cream feature tags + quick-launch card */}
+        <div className="ph-aside">
+          <nav className="ph-chips" aria-label="Quick feature shortcuts">
+            {FEATURE_CHIPS.map((chip) => {
+              const Icon = chip.icon;
+              return (
+                <Link
+                  key={chip.label}
+                  to={chip.to}
+                  className={`ph-chip ${chip.slotClass}`}
+                  style={{ '--chip-rotate': chip.rotate } as React.CSSProperties}
+                >
+                  <span
+                    className="ph-chip__icon"
+                    style={{ backgroundColor: chip.color }}
+                    aria-hidden="true"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="ph-chip__text">{chip.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-      {/* Bottom desc — bottom-left editorial text */}
-      <p className="ph-footnote" aria-hidden="true">
-        — Everything you need, right in your pocket.
-      </p>
-
-      {/* Featured card — bottom-right */}
-      <div className="ph-featured" aria-hidden="true">
-        <div className="ph-featured__inner">
-          <span className="ph-featured__label">Quick launch</span>
-          <span className="ph-featured__title">Prompt Studio</span>
+          <Link to="/prompts" className="ph-featured">
+            <div className="ph-featured__inner">
+              <span className="ph-featured__label">Quick Launch</span>
+              <span className="ph-featured__title">
+                Prompt Studio
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </span>
+            </div>
+          </Link>
         </div>
       </div>
     </section>

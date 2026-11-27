@@ -22,6 +22,9 @@
   --surface-glass: var(--nature-glass);
   --surface-floating: rgba(244, 241, 223, 0.92);
 
+  /* Layout */
+  --header-height: 64px;
+
   /* Typography */
   --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
   --font-sans: "Inter", system-ui, sans-serif;

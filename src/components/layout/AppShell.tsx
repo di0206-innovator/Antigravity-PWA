@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
   Activity,
@@ -77,6 +77,8 @@ export interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
   const isOnline = useOnlineStatus();
   const { triggerHaptic } = useHaptics();
   const navDrawerOpen = useAppStore((s) => s.navDrawerOpen);
@@ -132,18 +134,21 @@ export function AppShell({ children }: AppShellProps) {
         Skip to main content
       </a>
 
-      <header className="safe-top sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/90 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-1.5 min-[360px]:gap-2 px-2.5 py-2.5 min-[360px]:px-3 sm:px-6">
+      <header className="safe-top sticky top-0 z-30 w-full border-b border-[#252525]/12 bg-[#F4F1DF]/95 text-[#252525] backdrop-blur-md">
+        <div className="flex w-full min-h-[var(--header-height,64px)] items-center justify-between gap-2 px-3 py-2 sm:px-6 lg:px-10">
           <Link
             to="/"
-            className="touch-target inline-flex items-center gap-1.5 min-[360px]:gap-2.5 rounded-xl px-1 min-[360px]:px-1.5 py-1 min-w-0"
+            className="touch-target inline-flex items-center gap-2 sm:gap-2.5 rounded-xl px-1.5 py-1 min-w-0"
           >
             <AgMonogram size={32} />
             <div className="min-w-0">
-              <span className="block truncate text-[15px] min-[360px]:text-base font-bold tracking-tight text-[var(--text-primary)]" style={{fontFamily: 'var(--font-display, Inter Tight, Inter, sans-serif)'}}>
+              <span
+                className="block truncate text-[15px] min-[360px]:text-base font-extrabold tracking-tight text-[#252525]"
+                style={{ fontFamily: 'var(--font-display, "Inter Tight", Inter, sans-serif)' }}
+              >
                 AG Pocket
               </span>
-              <span className="hidden sm:block truncate text-xs text-[var(--text-muted)]">
+              <span className="hidden sm:block truncate text-xs font-medium text-[#526D30]">
                 Antigravity Mobile Command Center
               </span>
             </div>
@@ -152,21 +157,21 @@ export function AppShell({ children }: AppShellProps) {
           <div className="flex items-center gap-1.5 min-[360px]:gap-2 shrink-0">
             <Badge
               tone={isOnline ? 'success' : 'warning'}
-              className="px-2 min-[360px]:px-2.5 gap-1 min-[360px]:gap-1.5"
+              className="px-2.5 gap-1.5 rounded-full border border-[#252525]/10 bg-white/80 text-[#252525]"
             >
               {isOnline ? (
-                <Wifi className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <Wifi className="h-3.5 w-3.5 shrink-0 text-[#526D30]" aria-hidden="true" />
               ) : (
-                <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <WifiOff className="h-3.5 w-3.5 shrink-0 text-[#A67C00]" aria-hidden="true" />
               )}
-              <span>{isOnline ? 'Online' : 'Offline'}</span>
+              <span className="font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
             </Badge>
 
             <NavLink
               to="/settings"
               end
               aria-label="Open Settings"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--nature-green)] hover:bg-[var(--bg-elevated)] transition-colors"
+              className="touch-target inline-flex items-center justify-center rounded-full border border-[#252525]/15 bg-white/85 px-2.5 text-[#252525] hover:border-[#526D30] hover:bg-white transition-colors"
             >
               <Settings className="h-5 w-5" aria-hidden="true" />
             </NavLink>
@@ -177,7 +182,7 @@ export function AppShell({ children }: AppShellProps) {
               aria-label="Open navigation menu"
               aria-expanded={navDrawerOpen}
               aria-controls="ag-nav-drawer"
-              className="touch-target inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 min-[360px]:px-2.5 text-[var(--text-primary)] hover:border-[var(--nature-green)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
+              className="touch-target inline-flex items-center justify-center rounded-full border border-[#252525]/15 bg-white/85 px-2.5 text-[#252525] hover:border-[#526D30] hover:bg-white transition-colors cursor-pointer"
             >
               <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -255,17 +260,21 @@ export function AppShell({ children }: AppShellProps) {
 
       <main
         id="main-content"
-        className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-6 pt-4 pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] min-w-0"
+        className="flex-1 w-full min-w-0 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]"
       >
-        {children}
+        {isHome ? (
+          children
+        ) : (
+          <div className="mx-auto w-full max-w-5xl px-3 sm:px-6 pt-4">{children}</div>
+        )}
       </main>
 
       <nav
         aria-label="Primary navigation"
-        className="safe-bottom fixed inset-x-0 bottom-0 z-30"
+        className="safe-bottom fixed inset-x-0 bottom-0 z-40 pointer-events-none"
       >
-        <div className="mx-auto max-w-md px-3 pb-2">
-          <div className="grid grid-cols-5 gap-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 px-1.5 py-1 shadow-lg backdrop-blur-xl">
+        <div className="mx-auto max-w-md px-3 pb-2 pointer-events-auto">
+          <div className="grid grid-cols-5 gap-1 rounded-2xl border border-[#252525]/12 bg-[#F4F1DF]/95 px-1.5 py-1 shadow-lg backdrop-blur-md">
             {PRIMARY_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
@@ -278,8 +287,8 @@ export function AppShell({ children }: AppShellProps) {
                     cn(
                       'touch-target flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] sm:text-xs font-medium transition-colors min-w-0',
                       isActive
-                        ? 'bg-[var(--accent-primary)] text-[var(--accent-primary-fg)]'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
+                        ? 'bg-[#526D30] text-white'
+                        : 'text-[#252525]/80 hover:bg-[#252525]/8 hover:text-[#252525]'
                     )
                   }
                 >

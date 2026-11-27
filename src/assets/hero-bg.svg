@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="skyGrad" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#8BBFDF"/>
+      <stop offset="60%" stop-color="#6095C8"/>
+      <stop offset="100%" stop-color="#4A7DAD"/>
+    </radialGradient>
+    <radialGradient id="cloud1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.75)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <radialGradient id="cloud2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A4C84A"/>
+      <stop offset="100%" stop-color="#7D9F40"/>
+    </linearGradient>
+    <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8FB83A"/>
+      <stop offset="100%" stop-color="#526D30"/>
+    </linearGradient>
+    <linearGradient id="hill3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C8D860"/>
+      <stop offset="100%" stop-color="#A4C84A"/>
+    </linearGradient>
+    <linearGradient id="hill4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6B9930"/>
+      <stop offset="100%" stop-color="#3D5222"/>
+    </linearGradient>
+    <filter id="blur1"><feGaussianBlur stdDeviation="3"/></filter>
+    <filter id="blur2"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="1440" height="900" fill="url(#skyGrad)"/>
+
+  <!-- Soft clouds -->
+  <ellipse cx="900" cy="130" rx="260" ry="90" fill="url(#cloud1)" filter="url(#blur2)"/>
+  <ellipse cx="1100" cy="90" rx="180" ry="60" fill="url(#cloud2)" filter="url(#blur2)"/>
+  <ellipse cx="750" cy="160" rx="140" ry="50" fill="rgba(255,255,255,0.35)" filter="url(#blur2)"/>
+  <ellipse cx="200" cy="110" rx="200" ry="65" fill="rgba(255,255,255,0.25)" filter="url(#blur2)"/>
+  <ellipse cx="1300" cy="150" rx="150" ry="55" fill="rgba(255,255,255,0.20)" filter="url(#blur2)"/>
+
+  <!-- Hill 4 — far back (darkest, furthest) -->
+  <path d="M0 540 Q180 440 360 500 Q540 560 720 490 Q900 420 1080 480 Q1260 540 1440 490 L1440 900 L0 900 Z"
+        fill="#5A8028" opacity="0.6" filter="url(#blur1)"/>
+
+  <!-- Hill 3 — mid-far left -->
+  <path d="M-80 620 Q120 500 320 560 Q520 620 700 540 Q880 460 1060 540 Q1240 620 1440 560 L1440 900 L-80 900 Z"
+        fill="url(#hill2)" opacity="0.85"/>
+
+  <!-- Hill 2 — mid right -->
+  <path d="M0 660 Q200 560 440 620 Q680 680 880 590 Q1080 500 1300 600 Q1420 650 1440 640 L1440 900 L0 900 Z"
+        fill="url(#hill1)"/>
+
+  <!-- Hill 1 — foreground left -->
+  <path d="M-100 760 Q100 660 300 700 Q500 740 700 660 Q840 600 980 670 Q1150 750 1440 700 L1440 900 L-100 900 Z"
+        fill="url(#hill3)"/>
+
+  <!-- Foreground base -->
+  <path d="M0 820 Q360 770 720 800 Q1080 830 1440 800 L1440 900 L0 900 Z"
+        fill="url(#hill4)"/>
+
+  <!-- Subtle sunlight gradient at top -->
+  <rect width="1440" height="300" fill="url(#skyGrad)" opacity="0.15"/>
+</svg>

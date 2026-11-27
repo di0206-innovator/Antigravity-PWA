@@ -180,22 +180,26 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-5">
-      <ParallaxHero />
-      {/* Header & Locally Knowable Status */}
-      <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 sm:p-6 space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <AgMonogram size={44} />
-            <div className="min-w-0">
-              <p className="text-sm text-[var(--text-secondary)]">
-                {getGreeting(now)} — {formattedDate}
-              </p>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)] nature-heading">
-                AG Pocket Command Center
-              </h1>
+    <div className="w-full">
+      <ParallaxHero
+        onOpenAntigravity={() => handleOpenAntigravity(OFFICIAL_ANTIGRAVITY_BASE_URL)}
+      />
+
+      <div className="mx-auto w-full max-w-5xl px-3 sm:px-6 pt-5 space-y-5">
+        {/* Header & Locally Knowable Status */}
+        <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 sm:p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <AgMonogram size={44} />
+              <div className="min-w-0">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {getGreeting(now)} — {formattedDate}
+                </p>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)] nature-heading">
+                  AG Pocket Command Center
+                </h2>
+              </div>
             </div>
-          </div>
 
           <Link
             to="/settings"
@@ -619,6 +623,7 @@ export function HomePage() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
